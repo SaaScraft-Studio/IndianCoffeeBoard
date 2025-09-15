@@ -49,11 +49,17 @@
     "embla-carousel-react": "^8.3.0",
     "eslint": "8.49.0",
     "eslint-config-next": "13.5.1",
+    "get-stream": "^9.0.1",
     "input-otp": "^1.2.4",
+    "jspdf": "^3.0.2",
     "lucide-react": "^0.446.0",
+    "mongoose": "^8.18.1",
     "next": "13.5.1",
     "next-themes": "^0.3.0",
+    "nodemailer": "^7.0.6",
+    "pdfkit": "^0.17.2",
     "postcss": "8.4.30",
+    "razorpay": "^2.9.6",
     "react": "18.2.0",
     "react-day-picker": "^8.10.1",
     "react-dom": "18.2.0",
@@ -64,8 +70,15 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss": "3.3.3",
     "tailwindcss-animate": "^1.0.7",
+    "twilio": "^5.9.0",
     "typescript": "5.2.2",
     "vaul": "^0.9.9",
     "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/get-stream": "^3.0.1",
+    "@types/nodemailer": "^7.0.1",
+    "@types/pdfkit": "^0.17.3",
+    "@types/twilio": "^3.19.2"
   }
 }

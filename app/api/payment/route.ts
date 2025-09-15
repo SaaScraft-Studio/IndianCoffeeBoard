@@ -1,64 +1,125 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PaymentData } from '@/app/types/registration';
+// /app/api/payment/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import Razorpay from "razorpay";
+import { connectDB } from "@/lib/mongodb";
+import jsPDF from "jspdf";
+import nodemailer from "nodemailer";
 
-export async function POST(request: NextRequest) {
+export const dynamic = "force-dynamic";
+
+if (
+  !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+  !process.env.RAZORPAY_KEY_SECRET
+) {
+  throw new Error("Razorpay keys not set in .env.local");
+}
+
+const razorpay = new Razorpay({
+  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+export async function POST(req: NextRequest) {
   try {
-    const body: PaymentData = await request.json();
-    
-    // Mock Razorpay integration - replace with actual Razorpay API calls
-    const mockRazorpayResponse = {
-      id: `pay_${Math.random().toString(36).substr(2, 9)}`,
-      entity: 'payment',
-      amount: body.amount * 100, // Razorpay uses paisa
-      currency: body.currency,
-      status: Math.random() > 0.1 ? 'captured' : 'failed', // 90% success rate
-      order_id: `order_${Math.random().toString(36).substr(2, 9)}`,
-      method: 'card',
-      description: 'Coffee Championship Registration',
-      created_at: Math.floor(Date.now() / 1000),
-    };
+    const body = await req.json();
+    const { registrationId, amount, currency, customerInfo, paymentId } = body;
 
-    if (mockRazorpayResponse.status === 'captured') {
-      // Mock email and SMS sending
-      await sendConfirmationNotifications(body.customerInfo, mockRazorpayResponse.id);
-      
-      return NextResponse.json({
-        success: true,
-        payment: mockRazorpayResponse,
-        message: 'Payment successful'
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        error: 'Payment failed',
-        payment: mockRazorpayResponse
-      }, { status: 400 });
+    // ✅ Validate request
+    if (!paymentId) {
+      return NextResponse.json(
+        { success: false, error: "`paymentId` is required" },
+        { status: 400 }
+      );
+    }
+    if (!registrationId || !amount || !currency) {
+      return NextResponse.json(
+        { success: false, error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-  } catch (error) {
-    console.error('Payment API error:', error);
+    // ✅ Capture Razorpay payment
+    const captureAmount = Math.round(amount * 100); // convert ₹ to paise
+    const payment = await razorpay.payments.capture(
+      paymentId,
+      captureAmount,
+      currency
+    );
+
+    const paymentStatus: "success" | "failed" =
+      payment.status === "captured" ? "success" : "failed";
+
+    // ✅ Update DB
+    const db = await connectDB();
+    await db.collection("registrations").updateOne(
+      { registrationId },
+      {
+        $set: {
+          paymentStatus,
+          paymentId: payment.id,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    // ✅ Send confirmation only if successful
+    if (paymentStatus === "success" && customerInfo) {
+      await sendConfirmation(customerInfo, registrationId, amount);
+    }
+
+    return NextResponse.json({
+      success: paymentStatus === "success",
+      paymentStatus,
+      payment,
+    });
+  } catch (err) {
+    console.error("❌ Payment API Error:", err);
+    const message =
+      err instanceof Error ? err.message : "Unexpected error occurred";
     return NextResponse.json(
-      { error: 'Payment processing failed' },
+      { success: false, paymentStatus: "failed", error: message },
       { status: 500 }
     );
   }
 }
 
-async function sendConfirmationNotifications(customerInfo: any, paymentId: string) {
-  // Mock email sending
-  console.log(`Sending email to ${customerInfo.email} with payment ID: ${paymentId}`);
-  
-  // Mock SMS sending
-  console.log(`Sending SMS to ${customerInfo.mobile} with payment confirmation`);
-  
-  // Mock PDF generation and attachment
-  console.log(`Generating PDF receipt for payment: ${paymentId}`);
-  
-  // In a real implementation, you would:
-  // 1. Use a service like SendGrid/Nodemailer for emails
-  // 2. Use a service like Twilio for SMS
-  // 3. Use libraries like jsPDF or Puppeteer for PDF generation
-  // 4. Store files in cloud storage (AWS S3, etc.)
-  
-  return true;
+// Example confirmation sender (PDF + Email)
+async function sendConfirmation(
+  customer: { name: string; email: string; mobile: string },
+  registrationId: string,
+  amount: number
+) {
+  // 1. Generate PDF
+  const doc = new jsPDF();
+  doc.text(
+    `Registration Receipt\n\nRegistration ID: ${registrationId}\nAmount Paid: ₹${amount}`,
+    10,
+    10
+  );
+  const pdfData = doc.output("arraybuffer");
+
+  // 2. Send email
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: customer.email,
+    subject: "Registration Confirmation",
+    text: `Hi ${customer.name}, your payment was successful!`,
+    attachments: [
+      {
+        filename: "receipt.pdf",
+        content: Buffer.from(pdfData),
+      },
+    ],
+  });
+
+  console.log(`📩 Email sent to ${customer.email}`);
+  console.log(`📲 SMS to ${customer.mobile}: Payment Successful`);
 }

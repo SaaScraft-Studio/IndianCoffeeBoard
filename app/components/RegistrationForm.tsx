@@ -45,12 +45,23 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     competition: "",
     aadhaarNumber: "",
   });
-
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "processing" | "success" | "failed"
   >("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // ✅ Load Razorpay script dynamically
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if ((window as any).Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -92,15 +103,27 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
   const handleInputChange = (field: keyof RegistrationData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
   const formatAadhaar = (value: string) => {
     const cleaned = value.replace(/\s/g, "");
-    const formatted = cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
-    return formatted;
+    return cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+
+  const resetForm = () => {
+    setFormData({
+      city,
+      name: "",
+      email: "",
+      mobile: "",
+      address: "",
+      state: "",
+      pin: "",
+      competition: "",
+      aadhaarNumber: "",
+    });
+    setPaymentStatus("idle");
   };
 
   const handleSubmitAndPay = async () => {
@@ -117,64 +140,126 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     setPaymentStatus("processing");
 
     try {
-      // Simulate API call to create registration
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // 1️⃣ Create registration in DB
+      const regRes = await fetch("/api/registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-      // Simulate Razorpay integration
+      if (!regRes.ok) {
+        const data = await regRes.json();
+        throw new Error(data.error || "Registration creation failed");
+      }
+
+      const { registration } = await regRes.json();
+
+      // 2️⃣ Get selected competition details
       const selectedCompetition = COMPETITIONS.find(
         (c) => c.id === formData.competition
       );
       if (!selectedCompetition) throw new Error("Competition not found");
 
-      // Mock Razorpay payment
-      const paymentSuccess = await simulatePayment(selectedCompetition.price);
+      // 3️⃣ Create Razorpay order
+      const orderRes = await fetch("/api/payment/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: selectedCompetition.price,
+          currency: "INR",
+        }),
+      });
 
-      if (paymentSuccess) {
-        setPaymentStatus("success");
-        toast({
-          title: "Registration Successful! 🎉",
-          description:
-            "Payment completed successfully. Check your email and SMS for confirmation with PDF receipt.",
-          variant: "default",
-        });
-
-        // Reset form after success
-        setTimeout(() => {
-          setFormData({
-            city,
-            name: "",
-            email: "",
-            mobile: "",
-            address: "",
-            state: "",
-            pin: "",
-            competition: "",
-            aadhaarNumber: "",
-          });
-          setPaymentStatus("idle");
-        }, 3000);
-      } else {
-        throw new Error("Payment failed");
+      if (!orderRes.ok) {
+        const data = await orderRes.json();
+        throw new Error(data.error || "Order creation failed");
       }
-    } catch (error) {
+
+      const { order } = await orderRes.json();
+
+      // 4️⃣ Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast({
+          title: "Payment Failed",
+          description: "Could not load Razorpay. Please try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        setPaymentStatus("idle");
+        return;
+      }
+
+      // 5️⃣ Open Razorpay Checkout
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Competition Registration",
+        description: "Complete your payment",
+        order_id: order.id,
+        prefill: {
+          name: registration.name,
+          email: registration.email,
+          contact: registration.mobile,
+        },
+        handler: async function (response: any) {
+          const payRes = await fetch("/api/payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              registrationId: registration._id,
+              amount: selectedCompetition.price,
+              currency: "INR",
+              paymentId: response.razorpay_payment_id,
+              customerInfo: {
+                name: registration.name,
+                email: registration.email,
+                mobile: registration.mobile,
+              },
+            }),
+          });
+
+          const data = await payRes.json();
+          if (data.success) {
+            setPaymentStatus("success");
+            toast({
+              title: "Payment Successful",
+              description:
+                "Your registration is confirmed! Check email for receipt.",
+            });
+            setTimeout(() => resetForm(), 3000);
+          } else {
+            setPaymentStatus("failed");
+            toast({
+              title: "Payment Failed",
+              description: "There was an issue completing your payment.",
+              variant: "destructive",
+            });
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPaymentStatus("idle");
+            setLoading(false);
+          },
+        },
+      };
+
+      const razorpay = new (window as any).Razorpay(options);
+      razorpay.open();
+    } catch (err: unknown) {
       setPaymentStatus("failed");
       toast({
         title: "Payment Failed",
         description:
-          "There was an issue processing your payment. Please try again.",
+          err instanceof Error
+            ? err.message
+            : "There was an issue processing your payment. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
-  };
-
-  const simulatePayment = async (amount: number): Promise<boolean> => {
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 90% success rate for demo purposes
-    return Math.random() > 0.1;
   };
 
   const handleRetryPayment = () => {
@@ -198,6 +283,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* --- FORM FIELDS HERE (same as your existing UI) --- */}
+        {/* Name, Email, Mobile, PIN, Address, State, Competition, Aadhaar */}
+        {/* ... you can keep all your existing JSX unchanged ... */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">
