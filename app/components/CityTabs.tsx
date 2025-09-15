@@ -9,9 +9,9 @@ interface CityTabsProps {
 }
 
 const cities = [
-  { id: "mumbai" as const, name: "Mumbai", icon: "🏙️" },
-  { id: "hyderabad" as const, name: "Hyderabad", icon: "🏛️" },
-  { id: "bangalore" as const, name: "Bangalore", icon: "🌳" },
+  { id: "mumbai" as const, name: "Mumbai", icon: "/gateway.png" },
+  { id: "hyderabad" as const, name: "Hyderabad", icon: "charminar.png" },
+  { id: "bangalore" as const, name: "Bangalore", icon: "bangalore.png" },
 ];
 
 export default function CityTabs({
@@ -32,7 +32,13 @@ export default function CityTabs({
                 : "bg-white text-gray-700 border-2 border-gray-200 hover:border-orange-300 hover:bg-orange-50"
             )}
           >
-            <span className="text-2xl">{city.icon}</span>
+            <img
+              src={city.icon}
+              alt={city.name}
+              width={28}
+              height={28}
+              className="object-contain"
+            />
             <span className="text-lg">{city.name}</span>
           </button>
         ))}

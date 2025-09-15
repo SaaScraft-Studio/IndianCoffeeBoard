@@ -11,6 +11,8 @@ export default function Home() {
     "mumbai" | "hyderabad" | "bangalore"
   >("mumbai");
 
+  const currentYear = new Date().getFullYear();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
       <Header />
@@ -32,18 +34,34 @@ export default function Home() {
             selectedCity={selectedCity}
             onCityChange={setSelectedCity}
           />
-          <RegistrationForm city={selectedCity} />
+          {/* <RegistrationForm city={selectedCity} /> */}
+          {selectedCity === "mumbai" ? (
+            <RegistrationForm city={selectedCity} />
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
+                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                  🚧 Coming Soon
+                </p>
+                <p className="text-gray-700 mt-2 text-lg">
+                  Registration for this city will open soon.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       <footer className="bg-gradient-to-r from-gray-900 to-gray-800 text-white py-8 mt-16">
         <div className="container mx-auto px-4 text-center">
           <p className="text-gray-300">
-            © 2025 India Coffee Board. All rights reserved. | National Coffee
-            Championships 2025
+            © {currentYear} India Coffee Board. All rights reserved. | National
+            Coffee Championships 2025
           </p>
           <div className="mt-4 flex justify-center space-x-6 text-sm">
-            <span className="text-orange-400">Powered by SCAI</span>
+            <span className="text-orange-400">
+              Powered by SaasCraft Pvt.Ltd
+            </span>
             <span className="text-gray-400">|</span>
             <span className="text-orange-400">
               Specialty Coffee Association of India
