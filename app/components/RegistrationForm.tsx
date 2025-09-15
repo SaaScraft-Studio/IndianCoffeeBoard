@@ -301,7 +301,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             onChange={(e) => handleInputChange("address", e.target.value)}
             rows={3}
             className={cn(
-              "border-2 focus:border-orange-500 focus:ring-orange-500 resize-none",
+              "border-2 focus:border-orange-500 focus:ring-orange-500",
               errors.address && "border-red-500"
             )}
           />
