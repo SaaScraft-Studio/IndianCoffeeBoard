@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const data = await req.json();
     const registrations = await getRegistrationCollection();
 
-    // Check duplicates
+    // Check if registration exists
     const exists = await registrations.findOne({
       $or: [
         { email: data.email },
@@ -18,12 +18,26 @@ export async function POST(req: NextRequest) {
     });
 
     if (exists) {
-      return NextResponse.json(
-        { error: "Email, mobile, or Aadhaar already exists" },
-        { status: 409 }
-      );
+      if (
+        exists.paymentStatus === "pending" ||
+        exists.paymentStatus === "failed"
+      ) {
+        // Allow retry by returning existing registration
+        return NextResponse.json({
+          success: true,
+          registration: exists,
+          retryAllowed: true,
+        });
+      } else if (exists.paymentStatus === "success") {
+        // Already paid, block duplicate
+        return NextResponse.json(
+          { error: "Email, mobile, or Aadhaar already registered and paid" },
+          { status: 409 }
+        );
+      }
     }
 
+    // Create new registration
     const newRegistration = {
       ...data,
       paymentStatus: "pending",
@@ -39,20 +53,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("❌ Registration POST Error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const email = searchParams.get("email");
-    const registrations = await getRegistrationCollection();
-
-    const registration = await registrations.findOne({ email });
-    return NextResponse.json({ exists: !!registration, registration });
-  } catch (err) {
-    console.error("❌ Registration GET Error:", err);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

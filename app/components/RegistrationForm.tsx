@@ -53,7 +53,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPDF, setShowPDF] = useState(false);
 
-  // ✅ Load Razorpay script dynamically
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
       if ((window as any).Razorpay) return resolve(true);
@@ -67,43 +66,35 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.name?.trim()) newErrors.name = "Name is required";
     if (!formData.email?.trim()) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email";
     }
-
     if (!formData.mobile?.trim()) {
       newErrors.mobile = "Mobile number is required";
     } else if (!/^[6-9]\d{9}$/.test(formData.mobile)) {
       newErrors.mobile = "Please enter a valid 10-digit mobile number";
     }
-
     if (!formData.address?.trim()) newErrors.address = "Address is required";
     if (!formData.state) newErrors.state = "State is required";
-
     if (!formData.pin?.trim()) {
       newErrors.pin = "PIN code is required";
     } else if (!/^\d{6}$/.test(formData.pin)) {
       newErrors.pin = "Please enter a valid 6-digit PIN code";
     }
-
     if (!formData.competition)
       newErrors.competition = "Please select a competition";
-
     if (!formData.aadhaarNumber?.trim()) {
       newErrors.aadhaarNumber = "Aadhaar number is required";
     } else if (!/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ""))) {
       newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number";
     }
-
     if (!formData.acceptedTerms) {
       newErrors.acceptedTerms =
         "You must read and accept the T&C before proceeding";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,6 +120,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       pin: "",
       competition: "",
       aadhaarNumber: "",
+      acceptedTerms: false,
     });
     setPaymentStatus("idle");
   };
@@ -154,20 +146,39 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         body: JSON.stringify(formData),
       });
 
+      const regData = await regRes.json();
+
       if (!regRes.ok) {
-        const data = await regRes.json();
-        throw new Error(data.error || "Registration creation failed");
+        toast({
+          title: "Registration Failed",
+          description: regData.error || "Error creating registration",
+          variant: "destructive",
+        });
+        setLoading(false);
+        setPaymentStatus("idle");
+        return;
       }
 
-      const { registration } = await regRes.json();
+      const { registration, retryAllowed } = regData;
 
-      // 2️⃣ Get selected competition details
+      if (registration.paymentStatus === "success") {
+        toast({
+          title: "Already Registered",
+          description: "Your payment was successful. Registration complete.",
+          variant: "default",
+        });
+        setPaymentStatus("success");
+        setLoading(false);
+        return;
+      }
+
+      // Retry or new payment for pending/failed
       const selectedCompetition = COMPETITIONS.find(
-        (c) => c.id === formData.competition
+        (c) => c.id === registration.competition
       );
       if (!selectedCompetition) throw new Error("Competition not found");
 
-      // 3️⃣ Create Razorpay order
+      // Create Razorpay order
       const orderRes = await fetch("/api/payment/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -184,20 +195,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
       const { order } = await orderRes.json();
 
-      // 4️⃣ Load Razorpay script
+      // Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast({
-          title: "Payment Failed",
-          description: "Could not load Razorpay. Please try again.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        setPaymentStatus("idle");
-        return;
-      }
+      if (!scriptLoaded) throw new Error("Could not load Razorpay script");
 
-      // 5️⃣ Open Razorpay Checkout
+      // Open Razorpay
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -231,6 +233,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
           const data = await payRes.json();
           setLoading(false);
+
           if (data.success) {
             setPaymentStatus("success");
             toast({
@@ -256,21 +259,21 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         },
       };
 
-      const razorpay = new (window as any).Razorpay(options);
-      razorpay.open();
+      new (window as any).Razorpay(options).open();
     } catch (err: unknown) {
+      setLoading(false);
       setPaymentStatus("failed");
       toast({
         title: "Payment Failed",
         description:
           err instanceof Error
             ? err.message
-            : "There was an issue processing your payment. Please try again.",
+            : "Something went wrong. Try again.",
         variant: "destructive",
       });
-      setLoading(false);
     }
   };
+
 
   const handleRetryPayment = () => {
     setPaymentStatus("idle");
@@ -293,6 +296,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
+        {/* --- Form fields (same as your original code) --- */}
+        {/* --- Terms & Conditions, PDF Viewer, Fee display --- */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">
