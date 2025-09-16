@@ -1,38 +1,32 @@
-// lib/mongodb.ts
-import { MongoClient, Db } from "mongodb";
+import mongoose from "mongoose";
 
-if (!process.env.MONGODB_URI) {
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
   throw new Error(
-    "Please define the MONGODB_URI"
+    "Please define the MONGODB_URI environment variable inside .env"
   );
 }
 
-const uri = process.env.MONGODB_URI;
-const options = {};
+const MONGODB_URI_STR: string = MONGODB_URI;
 
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
+let isConnected = false; // track connection state
 
-declare global {
-  // allow global `var` to avoid multiple connections in dev
-  // eslint-disable-next-line no-var
-  var _mongoClientPromise: Promise<MongoClient>;
-}
+export async function connectToDB() {
+  if (!isConnected) {
+    try {
+      await mongoose.connect(MONGODB_URI_STR, {
+        dbName: process.env.MONGODB_DB || "coffee_championship",
+      });
 
-if (process.env.NODE_ENV === "development") {
-  // In development, use a global variable
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+      isConnected = true;
+      console.log("✅ MongoDB connected");
+    } catch (error) {
+      console.error("❌ MongoDB connection error", error);
+      throw new Error("Failed to connect to MongoDB");
+    }
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  // In production, create a new client
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
-}
 
-export async function connectDB(): Promise<Db> {
-  const client = await clientPromise;
-  return client.db(process.env.MONGODB_DB || "coffee_championship");
+  // ✅ Return native MongoDB Database instance for collection()
+  return mongoose.connection.db;
 }

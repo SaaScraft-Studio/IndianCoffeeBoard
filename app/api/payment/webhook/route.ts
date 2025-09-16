@@ -1,17 +1,18 @@
-// /app/api/payment/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getRegistrationCollection } from "@/models/Registration";
+import { connectToDB } from "@/lib/mongodb";
+import { Registration } from "@/models/Registration";
 import sendConfirmation from "@/lib/sendConfirmation";
-import { RegistrationData } from "@/app/types/registration";
 
-export const dynamic = "force-dynamic"; // ✅ prevent caching
+export const dynamic = "force-dynamic"; // ✅ ensure no caching
 
 export async function POST(req: NextRequest) {
   try {
+    await connectToDB();
     const webhookBody = await req.json();
 
     const paymentEntity = webhookBody?.payload?.payment?.entity;
     if (!paymentEntity) {
+      console.error("❌ Webhook received without payment entity:", webhookBody);
       return NextResponse.json(
         { error: "Invalid webhook payload" },
         { status: 400 }
@@ -20,44 +21,52 @@ export async function POST(req: NextRequest) {
 
     const { razorpay_payment_id, razorpay_order_id, status } = paymentEntity;
 
-    const registrations = await getRegistrationCollection();
-    const registration = await registrations.findOne<RegistrationData>({
+    // ✅ Find registration by orderId (stored as registrationId)
+    const registration = await Registration.findOne({
       registrationId: razorpay_order_id,
     });
 
     if (!registration) {
+      console.warn(
+        `⚠️ Registration not found for orderId: ${razorpay_order_id}`
+      );
       return NextResponse.json(
         { error: "Registration not found" },
         { status: 404 }
       );
     }
 
+    // ✅ Determine new payment status
     const newPaymentStatus = status === "captured" ? "success" : "failed";
 
-    // Update payment info in DB
-    const updated = await registrations.updateOne(
-      { registrationId: razorpay_order_id },
-      {
-        $set: {
-          paymentStatus: newPaymentStatus,
-          paymentId: razorpay_payment_id,
-          updatedAt: new Date(),
-        },
-      }
+    // ✅ Update registration document
+    registration.paymentStatus = newPaymentStatus;
+    registration.paymentId = razorpay_payment_id;
+    await registration.save();
+
+    console.log(
+      `✅ Registration ${registration.registrationId} updated to ${newPaymentStatus}`
     );
 
-    // ✅ Pass a plain object that includes updated fields
+    // ✅ Send confirmation email only if payment succeeded
     if (newPaymentStatus === "success") {
-      await sendConfirmation({
-        ...registration,
-        paymentStatus: newPaymentStatus,
-        paymentId: razorpay_payment_id,
-      });
+      try {
+        await sendConfirmation({
+          ...registration.toObject(), // convert mongoose doc → plain object
+          paymentStatus: newPaymentStatus,
+          paymentId: razorpay_payment_id,
+        });
+        console.log(`📧 Confirmation email sent to ${registration.email}`);
+      } catch (emailErr) {
+        console.error("❌ Failed to send confirmation email:", emailErr);
+        // Continue without failing webhook (important for Razorpay)
+      }
     }
 
     return NextResponse.json({
       success: true,
-      modifiedCount: updated.modifiedCount,
+      registrationId: registration.registrationId,
+      paymentStatus: registration.paymentStatus,
     });
   } catch (err) {
     console.error("❌ Webhook Error:", err);

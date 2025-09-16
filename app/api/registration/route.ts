@@ -1,15 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRegistrationCollection } from "@/models/Registration";
+import { connectToDB } from "@/lib/mongodb";
+import { Registration } from "@/models/Registration";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * POST /api/registration
+ * Create a new registration OR allow retry for pending/failed payment
+ */
 export async function POST(req: NextRequest) {
   try {
+    await connectToDB();
     const data = await req.json();
-    const registrations = await getRegistrationCollection();
 
-    // Check if registration exists
-    const exists = await registrations.findOne({
+    if (!data.email || !data.aadhaarNumber || !data.name) {
+      return NextResponse.json(
+        { error: "name, email, and aadhaarNumber are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check for existing registration by email, mobile, or Aadhaar
+    const exists = await Registration.findOne({
       $or: [
         { email: data.email },
         { mobile: data.mobile },
@@ -22,14 +34,14 @@ export async function POST(req: NextRequest) {
         exists.paymentStatus === "pending" ||
         exists.paymentStatus === "failed"
       ) {
-        // Allow retry by returning existing registration
         return NextResponse.json({
           success: true,
           registration: exists,
           retryAllowed: true,
         });
-      } else if (exists.paymentStatus === "success") {
-        // Already paid, block duplicate
+      }
+
+      if (exists.paymentStatus === "success") {
         return NextResponse.json(
           { error: "Email, mobile, or Aadhaar already registered and paid" },
           { status: 409 }
@@ -37,15 +49,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create new registration
-    const newRegistration = {
+    // ✅ Create new registration document
+    const newRegistration = await Registration.create({
       ...data,
-      paymentStatus: "pending",
       registrationId: `CFC2025${Date.now()}`,
-      createdAt: new Date(),
-    };
-
-    await registrations.insertOne(newRegistration);
+      paymentStatus: "pending",
+    });
 
     return NextResponse.json(
       { success: true, registration: newRegistration },
@@ -53,6 +62,58 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("❌ Registration POST Error:", err);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Server error",
+        details: err instanceof Error ? err.message : err,
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/registration
+ * Update payment status + paymentId after payment gateway callback
+ */
+export async function PATCH(req: NextRequest) {
+  try {
+    await connectToDB();
+    const { registrationId, paymentStatus, paymentId } = await req.json();
+
+    if (!registrationId || !paymentStatus) {
+      return NextResponse.json(
+        { error: "registrationId and paymentStatus are required" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Update registration document and return updated one
+    const updated = await Registration.findOneAndUpdate(
+      { registrationId },
+      {
+        paymentStatus,
+        ...(paymentId && { paymentId }),
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Registration not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, registration: updated });
+  } catch (err) {
+    console.error("❌ Registration PATCH Error:", err);
+    return NextResponse.json(
+      {
+        error: "Server error",
+        details: err instanceof Error ? err.message : err,
+      },
+      { status: 500 }
+    );
   }
 }

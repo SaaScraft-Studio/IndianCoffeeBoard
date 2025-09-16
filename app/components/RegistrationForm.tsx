@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +52,29 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   >("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPDF, setShowPDF] = useState(false);
+
+  const [competitions, setCompetitions] = useState<
+    { _id: string; name: string; price: number }[]
+  >([]);
+  const [loadingCompetitions, setLoadingCompetitions] = useState(true);
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        const res = await fetch("/api/competitions");
+        const data = await res.json();
+        setCompetitions(data);
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Failed to load competitions",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingCompetitions(false);
+      }
+    };
+    fetchCompetitions();
+  }, []);
 
   const loadRazorpayScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
@@ -173,8 +196,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       // Retry or new payment for pending/failed
-      const selectedCompetition = COMPETITIONS.find(
-        (c) => c.id === registration.competition
+
+      const selectedCompetition = competitions.find(
+        (c) => c._id === registration.competition
       );
       if (!selectedCompetition) throw new Error("Competition not found");
 
@@ -274,14 +298,13 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     }
   };
 
-
   const handleRetryPayment = () => {
     setPaymentStatus("idle");
     handleSubmitAndPay();
   };
 
-  const selectedCompetition = COMPETITIONS.find(
-    (c) => c.id === formData.competition
+  const selectedCompetition = competitions.find(
+    (c) => c._id === formData.competition
   );
 
   return (
@@ -438,7 +461,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           )}
         </div>
 
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
             Select Competition *
           </Label>
@@ -457,6 +480,40 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             <SelectContent>
               {COMPETITIONS.map((comp) => (
                 <SelectItem key={comp.id} value={comp.id}>
+                  {comp.name} (₹ {comp.price.toLocaleString("en-IN")})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.competition && (
+            <p className="text-sm text-red-600">{errors.competition}</p>
+          )}
+        </div> */}
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">
+            Select Competition *
+          </Label>
+          <Select
+            value={formData.competition || ""}
+            onValueChange={(value) => handleInputChange("competition", value)}
+            disabled={loadingCompetitions}
+          >
+            <SelectTrigger
+              className={cn(
+                "border-2 focus:border-orange-500 focus:ring-orange-500",
+                errors.competition && "border-red-500"
+              )}
+            >
+              <SelectValue
+                placeholder={
+                  loadingCompetitions ? "Loading..." : "Choose competition"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {competitions.map((comp) => (
+                <SelectItem key={comp._id} value={comp._id}>
                   {comp.name} (₹ {comp.price.toLocaleString("en-IN")})
                 </SelectItem>
               ))}
