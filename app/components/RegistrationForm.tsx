@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle, XCircle, X } from "lucide-react";
 import {
   RegistrationData,
   INDIAN_STATES,
@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface RegistrationFormProps {
-  city: "mumbai" | "hyderabad" | "bangalore";
+  city: "mumbai" | "delhi" | "bangalore";
 }
 
 export default function RegistrationForm({ city }: RegistrationFormProps) {
@@ -44,12 +44,14 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     pin: "",
     competition: "",
     aadhaarNumber: "",
+    acceptedTerms: false,
   });
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "processing" | "success" | "failed"
   >("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPDF, setShowPDF] = useState(false);
 
   // ✅ Load Razorpay script dynamically
   const loadRazorpayScript = (): Promise<boolean> => {
@@ -97,6 +99,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number";
     }
 
+    if (!formData.acceptedTerms) {
+      newErrors.acceptedTerms =
+        "You must read and accept the T&C before proceeding";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -129,7 +136,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   const handleSubmitAndPay = async () => {
     if (!validateForm()) {
       toast({
-        title: "Form Validation Error",
+        title: "Please fill all required fields",
         description: "Please fix the errors in the form before proceeding.",
         variant: "destructive",
       });
@@ -208,10 +215,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              registrationId: registration._id,
+              registrationId: registration.registrationId,
               amount: selectedCompetition.price,
               currency: "INR",
               paymentId: response.razorpay_payment_id,
+              orderId: response.razorpay_order_id,
+              signature: response.razorpay_signature,
               customerInfo: {
                 name: registration.name,
                 email: registration.email,
@@ -221,6 +230,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           });
 
           const data = await payRes.json();
+          setLoading(false);
           if (data.success) {
             setPaymentStatus("success");
             toast({
@@ -283,10 +293,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* --- FORM FIELDS HERE (same as your existing UI) --- */}
-        {/* Name, Email, Mobile, PIN, Address, State, Competition, Aadhaar */}
-        {/* ... you can keep all your existing JSX unchanged ... */}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">
@@ -312,7 +318,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               htmlFor="email"
               className="text-sm font-medium text-gray-700"
             >
-              Email * (Unique)
+              Email *
             </Label>
             <Input
               id="email"
@@ -335,7 +341,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               htmlFor="mobile"
               className="text-sm font-medium text-gray-700"
             >
-              Mobile * (Unique)
+              Mobile *
             </Label>
             <Input
               id="mobile"
@@ -445,7 +451,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             <SelectContent>
               {COMPETITIONS.map((comp) => (
                 <SelectItem key={comp.id} value={comp.id}>
-                  {comp.name} / ₹ {comp.price.toLocaleString("en-IN")}
+                  {comp.name} (₹ {comp.price.toLocaleString("en-IN")})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -460,7 +466,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             htmlFor="aadhaar"
             className="text-sm font-medium text-gray-700"
           >
-            Aadhaar Number * (Unique)
+            Aadhaar Number *
           </Label>
           <Input
             id="aadhaar"
@@ -482,6 +488,50 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             <p className="text-sm text-red-600">{errors.aadhaarNumber}</p>
           )}
         </div>
+
+        <div className="flex items-start space-x-2">
+          <input
+            type="checkbox"
+            id="tnc"
+            checked={formData.acceptedTerms || false}
+            onChange={(e) =>
+              handleInputChange("acceptedTerms", e.target.checked as any)
+            }
+            className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
+          />
+          <label htmlFor="tnc" className="text-sm text-gray-700 cursor-pointer">
+            I have read and agree to the{" "}
+            <button
+              type="button"
+              onClick={() => setShowPDF(true)} // ✅ open inline viewer
+              className="text-orange-600 underline hover:text-orange-700 inline-flex items-center"
+            >
+              Terms & Conditions
+            </button>
+          </label>
+        </div>
+        {errors.acceptedTerms && (
+          <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
+        )}
+
+        {/* ✅ Simple PDF Viewer (No Background) */}
+        {showPDF && (
+          <>
+            <div className="fixed inset-0 bg-white z-40">
+              <embed
+                src="/competition-guidelines.pdf#toolbar=0&navpanes=0&scrollbar=0"
+                type="application/pdf"
+                className="w-full h-full"
+              />
+            </div>
+            <button
+              onClick={() => setShowPDF(false)}
+              className="fixed top-1 right-4 z-50 bg-white p-2 rounded-full shadow hover:bg-red-50"
+            >
+              <X className="w-6 h-6 text-red-600" />
+            </button>
+          </>
+        )}
 
         {selectedCompetition && (
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">

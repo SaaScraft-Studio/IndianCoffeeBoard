@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState<
-    "mumbai" | "hyderabad" | "bangalore"
+    "mumbai" | "delhi" | "bangalore"
   >("mumbai");
 
   const currentYear = new Date().getFullYear();

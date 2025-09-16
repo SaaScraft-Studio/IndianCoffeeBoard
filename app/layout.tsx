@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'National Coffee Championships 2025 - India Coffee Board Registration',
-  description: 'Register for India\'s premier coffee competition. Showcase your skills and compete with the best coffee professionals across Mumbai, Hyderabad, and Bangalore.',
+  description: 'Register for India\'s premier coffee competition. Showcase your skills and compete with the best coffee professionals across Mumbai, Delhi, and Bangalore.',
   keywords: 'coffee, championship, india, registration, competition, barista, specialty coffee, SCAI',
   authors: [{ name: 'India Coffee Board' }],
   openGraph: {

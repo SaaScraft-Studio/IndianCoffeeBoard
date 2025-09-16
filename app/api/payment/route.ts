@@ -4,30 +4,54 @@ import Razorpay from "razorpay";
 import { connectDB } from "@/lib/mongodb";
 import jsPDF from "jspdf";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
 
-if (
-  !process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-  !process.env.RAZORPAY_KEY_SECRET
-) {
+if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
   throw new Error("Razorpay keys not set in .env.local");
 }
 
 const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+  key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
+
+// ✅ Signature verification helper
+function verifySignature(
+  orderId: string,
+  paymentId: string,
+  signature: string
+) {
+  const body = `${orderId}|${paymentId}`;
+  const expectedSignature = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+    .update(body)
+    .digest("hex");
+
+  return expectedSignature === signature;
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { registrationId, amount, currency, customerInfo, paymentId } = body;
+    const {
+      registrationId,
+      amount,
+      currency,
+      customerInfo,
+      paymentId,
+      orderId,
+      signature,
+    } = body;
 
-    // ✅ Validate request
-    if (!paymentId) {
+    // ✅ Validate request fields
+    if (!paymentId || !orderId || !signature) {
       return NextResponse.json(
-        { success: false, error: "`paymentId` is required" },
+        {
+          success: false,
+          error: "`paymentId`, `orderId` and `signature` are required",
+        },
         { status: 400 }
       );
     }
@@ -38,18 +62,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Capture Razorpay payment
-    const captureAmount = Math.round(amount * 100); // convert ₹ to paise
-    const payment = await razorpay.payments.capture(
-      paymentId,
-      captureAmount,
-      currency
-    );
+    // ✅ Verify Razorpay signature before proceeding
+    const isValid = verifySignature(orderId, paymentId, signature);
+    if (!isValid) {
+      console.error("❌ Invalid Razorpay Signature");
+      return NextResponse.json(
+        { success: false, error: "Invalid Razorpay signature" },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Fetch payment details (no capture needed for Standard Checkout)
+    const payment = await razorpay.payments.fetch(paymentId);
 
     const paymentStatus: "success" | "failed" =
       payment.status === "captured" ? "success" : "failed";
 
-    // ✅ Update DB
+    // ✅ Update DB with payment result
     const db = await connectDB();
     await db.collection("registrations").updateOne(
       { registrationId },
@@ -62,7 +91,7 @@ export async function POST(req: NextRequest) {
       }
     );
 
-    // ✅ Send confirmation only if successful
+    // ✅ Send confirmation email only if successful
     if (paymentStatus === "success" && customerInfo) {
       await sendConfirmation(customerInfo, registrationId, amount);
     }
@@ -83,13 +112,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Example confirmation sender (PDF + Email)
+// ✅ Confirmation email with PDF receipt
 async function sendConfirmation(
   customer: { name: string; email: string; mobile: string },
   registrationId: string,
   amount: number
 ) {
-  // 1. Generate PDF
+  // 1️⃣ Generate PDF receipt
   const doc = new jsPDF();
   doc.text(
     `Registration Receipt\n\nRegistration ID: ${registrationId}\nAmount Paid: ₹${amount}`,
@@ -98,17 +127,17 @@ async function sendConfirmation(
   );
   const pdfData = doc.output("arraybuffer");
 
-  // 2. Send email
+  // 2️⃣ Send email
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 
   await transporter.sendMail({
-    from: process.env.EMAIL_USER,
+    from: process.env.SMTP_USER,
     to: customer.email,
     subject: "Registration Confirmation",
     text: `Hi ${customer.name}, your payment was successful!`,

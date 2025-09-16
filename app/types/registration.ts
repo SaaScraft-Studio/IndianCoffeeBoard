@@ -1,6 +1,6 @@
 export interface RegistrationData {
   _id?: string;
-  city: "mumbai" | "hyderabad" | "bangalore";
+  city: "mumbai" | "delhi" | "bangalore";
   name: string;
   email: string;
   mobile: string;
@@ -9,6 +9,7 @@ export interface RegistrationData {
   pin: string;
   competition: string;
   aadhaarNumber: string;
+  acceptedTerms: boolean;
   paymentStatus: "pending" | "success" | "failed";
   paymentId?: string;
   registrationId?: string;
@@ -66,9 +67,8 @@ export const INDIAN_STATES = [
 ];
 
 export const COMPETITIONS = [
-  { id: "comp1", name: "Barista", price: 500 },
-  { id: "comp2", name: "Brewer’s", price: 1000 },
-  { id: "comp3", name: "CIGS", price: 1500 },
-  { id: "comp4", name: "Brewer’s", price: 2000 },
-  { id: "comp5", name: "Filter Coffee", price: 2500 },
+  { id: "comp1", name: "National Barista Championship", price: 1180 },
+  { id: "comp2", name: "National Brewer’s Cup", price: 1180 },
+  { id: "comp3", name: "Coffee in Good Spirits", price: 1180 },
+  { id: "comp5", name: "Filter Coffee Championship", price: 580 },
 ];
