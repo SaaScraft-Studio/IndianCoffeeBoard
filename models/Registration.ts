@@ -12,7 +12,15 @@ export interface IRegistration extends Document {
   registrationId: string;
   name: string;
   email: string;
-  mobile?: string;
+  mobile: string;
+  address: string;
+  city: string;
+  state: string;
+  pin: string;
+  aadhaarNumber: string;
+  competition: string;
+  competitionName?: string; // <-- Add this
+  acceptedTerms: boolean;
   amount: number;
   paymentStatus: "pending" | "success" | "failed";
   paymentId?: string;
@@ -26,7 +34,15 @@ const RegistrationSchema = new Schema<IRegistration>(
     registrationId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: { type: String, required: true },
-    mobile: { type: String },
+    mobile: { type: String, required: true },
+    address: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pin: { type: String, required: true },
+    aadhaarNumber: { type: String, required: true, unique: true },
+    competition: { type: String, required: true },
+    competitionName: { type: String }, // <-- Add this
+    acceptedTerms: { type: Boolean, required: true },
     amount: { type: Number, required: true },
     paymentStatus: {
       type: String,

@@ -13,14 +13,30 @@ export async function POST(req: NextRequest) {
     await connectToDB();
     const data = await req.json();
 
-    if (!data.email || !data.aadhaarNumber || !data.name) {
+    // Required fields validation
+    const requiredFields = [
+      "name",
+      "email",
+      "aadhaarNumber",
+      "mobile",
+      "address",
+      "city",
+      "state",
+      "pin",
+      "competition",
+      "acceptedTerms",
+      "amount",
+    ];
+    const missingFields = requiredFields.filter((f) => !(f in data));
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "name, email, and aadhaarNumber are required" },
+        { error: `Missing required fields: ${missingFields.join(", ")}` },
         { status: 400 }
       );
     }
 
-    // Check for existing registration by email, mobile, or Aadhaar
+    // Check for existing registration
     const exists = await Registration.findOne({
       $or: [
         { email: data.email },
@@ -34,9 +50,10 @@ export async function POST(req: NextRequest) {
         exists.paymentStatus === "pending" ||
         exists.paymentStatus === "failed"
       ) {
+        // Return all existing fields
         return NextResponse.json({
           success: true,
-          registration: exists,
+          registration: exists.toObject(),
           retryAllowed: true,
         });
       }
@@ -49,15 +66,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ✅ Create new registration document
-    const newRegistration = await Registration.create({
+    // Create new registration
+    const newRegistrationDoc = await Registration.create({
       ...data,
       registrationId: `CFC2025${Date.now()}`,
       paymentStatus: "pending",
     });
 
+    // Convert to plain object and ensure all sent fields appear
+    const newRegistration = { ...newRegistrationDoc.toObject(), ...data };
+
     return NextResponse.json(
-      { success: true, registration: newRegistration },
+      { success: true, registration: newRegistration, retryAllowed: false },
       { status: 201 }
     );
   } catch (err) {
@@ -72,10 +92,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/**
- * PATCH /api/registration
- * Update payment status + paymentId after payment gateway callback
- */
+
 export async function PATCH(req: NextRequest) {
   try {
     await connectToDB();

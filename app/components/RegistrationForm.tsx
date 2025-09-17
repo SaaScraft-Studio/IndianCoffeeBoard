@@ -56,7 +56,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   const [competitions, setCompetitions] = useState<
     { _id: string; name: string; price: number }[]
   >([]);
+
   const [loadingCompetitions, setLoadingCompetitions] = useState(true);
+
   useEffect(() => {
     const fetchCompetitions = async () => {
       try {
@@ -149,10 +151,30 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
+    console.log("🔄 handleSubmitAndPay called");
+    console.log("📦 Current formData:", formData);
+    console.log("📦 Available competitions:", competitions);
+
     if (!validateForm()) {
+      console.warn("⚠️ Validation failed!");
       toast({
         title: "Please fill all required fields",
         description: "Please fix the errors in the form before proceeding.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedCompetition = competitions.find(
+      (c) => c._id === formData.competition
+    );
+    console.log("🎯 selectedCompetition:", selectedCompetition);
+
+    if (!selectedCompetition) {
+      console.error("❌ No competition found for:", formData.competition);
+      toast({
+        title: "Error",
+        description: "Competition not found. Please select again.",
         variant: "destructive",
       });
       return;
@@ -162,16 +184,25 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     setPaymentStatus("processing");
 
     try {
+      const payload = {
+        ...formData,
+        amount: selectedCompetition.price,
+        competitionName: selectedCompetition.name,
+      };
+      console.log("📡 Sending registration payload:", payload);
+
       // 1️⃣ Create registration in DB
       const regRes = await fetch("/api/registration", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
       const regData = await regRes.json();
+      console.log("✅ Registration API response:", regData);
 
       if (!regRes.ok) {
+        console.error("❌ Registration failed:", regData);
         toast({
           title: "Registration Failed",
           description: regData.error || "Error creating registration",
@@ -182,27 +213,25 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         return;
       }
 
-      const { registration, retryAllowed } = regData;
+      const { registration } = regData;
+      console.log("🧾 Created registration:", registration);
 
       if (registration.paymentStatus === "success") {
+        console.log("✅ Already paid, skipping Razorpay.");
         toast({
           title: "Already Registered",
           description: "Your payment was successful. Registration complete.",
-          variant: "default",
         });
         setPaymentStatus("success");
         setLoading(false);
         return;
       }
 
-      // Retry or new payment for pending/failed
-
-      const selectedCompetition = competitions.find(
-        (c) => c._id === registration.competition
+      // 2️⃣ Create Razorpay order
+      console.log(
+        "💰 Creating Razorpay order for amount:",
+        selectedCompetition.price
       );
-      if (!selectedCompetition) throw new Error("Competition not found");
-
-      // Create Razorpay order
       const orderRes = await fetch("/api/payment/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -212,18 +241,37 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         }),
       });
 
-      if (!orderRes.ok) {
-        const data = await orderRes.json();
-        throw new Error(data.error || "Order creation failed");
+      const { order } = await orderRes.json();
+      console.log("✅ Razorpay order created:", order);
+
+      if (!orderRes.ok || !order) {
+        console.error("❌ Failed to create Razorpay order");
+        toast({
+          title: "Payment Failed",
+          description: "Could not create payment order. Try again.",
+          variant: "destructive",
+        });
+        setPaymentStatus("idle");
+        setLoading(false);
+        return;
       }
 
-      const { order } = await orderRes.json();
-
-      // Load Razorpay script
+      // 3️⃣ Load Razorpay script
       const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) throw new Error("Could not load Razorpay script");
+      if (!scriptLoaded) {
+        console.error("❌ Could not load Razorpay script");
+        toast({
+          title: "Payment Failed",
+          description: "Unable to load payment gateway. Please try again.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        setPaymentStatus("idle");
+        return;
+      }
 
-      // Open Razorpay
+      // 4️⃣ Open Razorpay checkout
+      console.log("🪟 Opening Razorpay checkout...");
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -237,6 +285,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           contact: registration.mobile,
         },
         handler: async function (response: any) {
+          console.log("✅ Payment success callback:", response);
+
           const payRes = await fetch("/api/payment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -256,8 +306,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           });
 
           const data = await payRes.json();
-          setLoading(false);
+          console.log("📩 Payment verification response:", data);
 
+          setLoading(false);
           if (data.success) {
             setPaymentStatus("success");
             toast({
@@ -277,6 +328,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         },
         modal: {
           ondismiss: () => {
+            console.warn("🛑 Razorpay modal closed by user");
             setPaymentStatus("idle");
             setLoading(false);
           },
@@ -284,7 +336,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       };
 
       new (window as any).Razorpay(options).open();
-    } catch (err: unknown) {
+    } catch (err) {
+      console.error("💥 Unexpected error:", err);
       setLoading(false);
       setPaymentStatus("failed");
       toast({
