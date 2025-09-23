@@ -1,12 +1,20 @@
-import mongoose from "mongoose";
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const CompetitionSchema = new mongoose.Schema({
+// 1️⃣ Define the interface for TypeScript
+export interface CompetitionDocument extends Document {
+  name: string;
+  price: number;
+}
+
+// 2️⃣ Define the Schema
+const CompetitionSchema: Schema<CompetitionDocument> = new Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
 });
 
-const Competition =
-  mongoose.models.Competition ||
-  mongoose.model("Competition", CompetitionSchema);
+// 3️⃣ Define or reuse the Model with explicit typing
+const Competition: Model<CompetitionDocument> =
+  (mongoose.models.Competition as Model<CompetitionDocument>) ||
+  mongoose.model<CompetitionDocument>("Competition", CompetitionSchema);
 
 export default Competition;
