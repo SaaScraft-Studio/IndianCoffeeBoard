@@ -20,7 +20,7 @@ export async function connectToDB() {
       });
 
       isConnected = true;
-      console.log("✅ MongoDB connected");
+      // console.log("✅ MongoDB connected");
     } catch (error) {
       console.error("❌ MongoDB connection error", error);
       throw new Error("Failed to connect to MongoDB");

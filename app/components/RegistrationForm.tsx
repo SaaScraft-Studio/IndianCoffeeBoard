@@ -151,9 +151,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-    console.log("🔄 handleSubmitAndPay called");
-    console.log("📦 Current formData:", formData);
-    console.log("📦 Available competitions:", competitions);
+    // console.log("🔄 handleSubmitAndPay called");
+    // console.log("📦 Current formData:", formData);
+    // console.log("📦 Available competitions:", competitions);
 
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
@@ -168,7 +168,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const selectedCompetition = competitions.find(
       (c) => c._id === formData.competition
     );
-    console.log("🎯 selectedCompetition:", selectedCompetition);
+    // console.log("🎯 selectedCompetition:", selectedCompetition);
 
     if (!selectedCompetition) {
       console.error("❌ No competition found for:", formData.competition);
@@ -189,7 +189,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         amount: selectedCompetition.price,
         competitionName: selectedCompetition.name,
       };
-      console.log("📡 Sending registration payload:", payload);
+      // console.log("📡 Sending registration payload:", payload);
 
       // 1️⃣ Create registration in DB
       const regRes = await fetch("/api/registration", {
@@ -199,12 +199,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       });
 
       const regData = await regRes.json();
-      console.log("✅ Registration API response:", regData);
+      // console.log("Registration API response:", regData);
 
       if (!regRes.ok) {
-        console.error("❌ Registration failed:", regData);
+        console.error("Registration failed:", regData);
         toast({
-          title: "Registration Failed",
+          // title: "Registration Failed",
           description: regData.error || "Error creating registration",
           variant: "destructive",
         });
@@ -214,10 +214,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       const { registration } = regData;
-      console.log("🧾 Created registration:", registration);
+      // console.log("🧾 Created registration:", registration);
 
       if (registration.paymentStatus === "success") {
-        console.log("✅ Already paid, skipping Razorpay.");
+        // console.log("Already paid, skipping Razorpay.");
         toast({
           title: "Already Registered",
           description: "Your payment was successful. Registration complete.",
@@ -228,10 +228,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       // 2️⃣ Create Razorpay order
-      console.log(
-        "💰 Creating Razorpay order for amount:",
-        selectedCompetition.price
-      );
+      // console.log(
+      //   "💰 Creating Razorpay order for amount:",
+      //   selectedCompetition.price
+      // );
       const orderRes = await fetch("/api/payment/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -242,7 +242,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       });
 
       const { order } = await orderRes.json();
-      console.log("✅ Razorpay order created:", order);
+      // console.log("✅ Razorpay order created:", order);
 
       if (!orderRes.ok || !order) {
         console.error("❌ Failed to create Razorpay order");
@@ -271,7 +271,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       // 4️⃣ Open Razorpay checkout
-      console.log("🪟 Opening Razorpay checkout...");
+      // console.log("🪟 Opening Razorpay checkout...");
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: order.amount,
@@ -285,7 +285,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           contact: registration.mobile,
         },
         handler: async function (response: any) {
-          console.log("✅ Payment success callback:", response);
+          // console.log("✅ Payment success callback:", response);
 
           const payRes = await fetch("/api/payment", {
             method: "POST",
@@ -306,7 +306,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           });
 
           const data = await payRes.json();
-          console.log("📩 Payment verification response:", data);
+          // console.log("📩 Payment verification response:", data);
 
           setLoading(false);
           if (data.success) {

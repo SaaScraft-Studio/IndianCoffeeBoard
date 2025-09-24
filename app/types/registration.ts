@@ -8,6 +8,8 @@ export interface RegistrationData {
   state: string;
   pin: string;
   competition: string;
+  competitionName?: string;
+  amount?: number;
   aadhaarNumber: string;
   acceptedTerms: boolean;
   paymentStatus: "pending" | "success" | "failed";

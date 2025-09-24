@@ -1,3 +1,4 @@
+// app/api/payment/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { connectToDB } from "@/lib/mongodb";
@@ -84,7 +85,9 @@ export async function POST(req: NextRequest) {
       await sendConfirmation(
         customerInfo,
         registration.registrationId,
-        registration.amount
+        registration.amount,
+        registration.competitionName,
+        registration.paymentId
       );
     }
 
@@ -105,16 +108,31 @@ export async function POST(req: NextRequest) {
 async function sendConfirmation(
   customer: { name: string; email: string; mobile: string },
   registrationId: string,
-  amount: number
+  amount: number,
+  competition: string,
+  paymentId: string
 ) {
+  // ✅ Generate PDF
   const doc = new jsPDF();
-  doc.text(
-    `Registration Receipt\n\nRegistration ID: ${registrationId}\nAmount Paid: ₹${amount}`,
-    10,
-    10
-  );
+  doc.setFontSize(12);
+
+  doc.text("National Coffee Championships 2025", 10, 10);
+  doc.text("Registration Receipt", 10, 20);
+  doc.text("----------------------------", 10, 30);
+
+  doc.text(`Registration Number: ${registrationId}`, 10, 40);
+  doc.text(`Name: ${customer.name}`, 10, 50);
+  doc.text(`Mobile: ${customer.mobile}`, 10, 60);
+  doc.text(`Competition: ${competition}`, 10, 70);
+  doc.text(`Amount Paid: Rs.${amount}`, 10, 80);
+  doc.text(`Payment Reference: ${paymentId}`, 10, 90);
+
+  doc.text("----------------------------", 10, 110);
+  doc.text("Thank you for registering!", 10, 120);
+
   const pdfData = doc.output("arraybuffer");
 
+  // ✅ Email
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -127,9 +145,22 @@ async function sendConfirmation(
     from: process.env.SMTP_USER,
     to: customer.email,
     subject: "Registration Confirmation",
-    text: `Hi ${customer.name}, your payment was successful!`,
-    attachments: [{ filename: "receipt.pdf", content: Buffer.from(pdfData) }],
+    html: `
+      <p>Dear <strong>${customer.name}</strong>,</p>
+      <p>Greetings from <b>National Coffee Championships 2025!</b></p>
+      <p>Please see your registration details:</p>
+      <ul>
+        <li><b>Registration Number:</b> ${registrationId}</li>
+        <li><b>Name:</b> ${customer.name}</li>
+        <li><b>Mobile:</b> ${customer.mobile}</li>
+        <li><b>Competition:</b> ${competition}</li>
+        <li><b>Amount:</b> Rs.${amount}</li>
+        <li><b>Payment Reference:</b> ${paymentId}</li>
+      </ul>
+      <p>Thanks,<br/>Organising Team<br/>National Coffee Championships 2025</p>
+    `,
+    attachments: [
+      { filename: "registration-receipt.pdf", content: Buffer.from(pdfData) },
+    ],
   });
-
-  console.log(`📩 Email sent to ${customer.email}`);
 }

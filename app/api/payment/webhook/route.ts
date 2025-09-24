@@ -3,7 +3,7 @@ import { connectToDB } from "@/lib/mongodb";
 import { Registration } from "@/models/Registration";
 import sendConfirmation from "@/lib/sendConfirmation";
 
-export const dynamic = "force-dynamic"; // ✅ ensure no caching
+export const dynamic = "force-dynamic"; // no caching
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,9 +19,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { razorpay_payment_id, razorpay_order_id, status } = paymentEntity;
+    const { razorpay_payment_id, razorpay_order_id, status, amount } =
+      paymentEntity;
 
-    // ✅ Find registration by orderId (stored as registrationId)
+    // Find registration by orderId (stored as registrationId)
     const registration = await Registration.findOne({
       registrationId: razorpay_order_id,
     });
@@ -36,30 +37,41 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // ✅ Determine new payment status
+    // Determine payment status
     const newPaymentStatus = status === "captured" ? "success" : "failed";
 
-    // ✅ Update registration document
+    // Update registration
     registration.paymentStatus = newPaymentStatus;
     registration.paymentId = razorpay_payment_id;
+    registration.amount = registration.amount || amount / 100; // Razorpay amount is in paise
     await registration.save();
 
-    console.log(
-      `✅ Registration ${registration.registrationId} updated to ${newPaymentStatus}`
-    );
+    console.log("📧 Sending confirmation email with data:", {
+      name: registration.name,
+      email: registration.email,
+      mobile: registration.mobile,
+      city: registration.city,
+      competitionName: registration.competitionName,
+      registrationId: registration.registrationId,
+      amount: registration.amount,
+      paymentId: registration.paymentId,
+    });
 
-    // ✅ Send confirmation email only if payment succeeded
+    // Send confirmation email only if payment succeeded
     if (newPaymentStatus === "success") {
       try {
         await sendConfirmation({
-          ...registration.toObject(), // convert mongoose doc → plain object
-          paymentStatus: newPaymentStatus,
-          paymentId: razorpay_payment_id,
+          name: registration.name,
+          email: registration.email,
+          mobile: registration.mobile,
+          city: registration.city,
+          competitionName: registration.competitionName,
+          registrationId: registration.registrationId,
+          amount: registration.amount,
+          paymentId: registration.paymentId,
         });
-        console.log(`📧 Confirmation email sent to ${registration.email}`);
       } catch (emailErr) {
         console.error("❌ Failed to send confirmation email:", emailErr);
-        // Continue without failing webhook (important for Razorpay)
       }
     }
 
