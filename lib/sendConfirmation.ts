@@ -1,10 +1,8 @@
-import nodemailer from "nodemailer";
-import PDFDocument from "pdfkit";
-import getStream from "get-stream";
-import path from "path";
-import fs from "fs";
+// /lib/sendConfirmation.ts
+import { sendZeptoMail } from "./zeptoMail";
+import { generateReceipt } from "./generateReceipt";
 
-interface EmailRegistrationData {
+interface ConfirmationData {
   name: string;
   email: string;
   mobile: string;
@@ -15,73 +13,39 @@ interface EmailRegistrationData {
   paymentId: string;
 }
 
-export default async function sendConfirmation(
-  registration: EmailRegistrationData
-) {
-  const doc = new PDFDocument({ margin: 50 });
-
-  const fontPath = path.join(
-    process.cwd(),
-    "public/fonts/NotoSans-Regular.ttf"
-  );
-  if (fs.existsSync(fontPath)) doc.registerFont("NotoSans", fontPath);
-  doc.font(fs.existsSync(fontPath) ? "NotoSans" : "Helvetica");
-
-  doc
-    .fontSize(20)
-    .text("National Coffee Championships 2025", { align: "center" });
-  doc.moveDown();
-  doc.fontSize(14).text("✅ Registration Confirmation", { align: "center" });
-  doc.moveDown(2);
-
-  doc.fontSize(12).text(`Name: ${registration.name}`);
-  doc.text(`Mobile: ${registration.mobile}`);
-  doc.text(`City: ${registration.city}`);
-  doc.text(`Competition: ${registration.competitionName}`);
-  doc.text(`Registration ID: ${registration.registrationId}`);
-  doc.moveDown();
-  doc.text(`Payment Status: Successful`);
-  doc.text(`Amount Paid: Rs.${registration.amount.toLocaleString("en-IN")}`);
-  doc.text(`Payment Reference: ${registration.paymentId}`);
-  doc.moveDown(2);
-  doc.text("Please keep this receipt for your records.", { align: "center" });
-
-  doc.end();
-  const pdfBuffer = await getStream.buffer(doc);
-
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  const emailHtml = `
-    <p>Hello ${registration.name},</p>
-    <p>Your registration for <strong>${
-      registration.competitionName
-    }</strong> is confirmed!</p>
-    <ul>
-      <li>Registration ID: ${registration.registrationId}</li>
-      <li>Name: ${registration.name}</li>
-      <li>Mobile: ${registration.mobile}</li>
-      <li>Competition: ${registration.competitionName}</li>
-      <li>Amount Paid: ₹${registration.amount.toLocaleString("en-IN")}</li>
-      <li>Payment Reference: ${registration.paymentId}</li>
-    </ul>
-    <p>Thanks,<br/>Organizing Team</p>
+export default async function sendConfirmation(data: ConfirmationData) {
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 16px;">
+      <h2>✅ Registration Successful</h2>
+      <p>Dear ${data.name},</p>
+      <p>Thank you for registering for the <b>${
+        data.competitionName
+      }</b> at the 
+      <b>${data.city.toUpperCase()} Chapter</b>.</p>
+      
+      <p><b>Registration ID:</b> ${data.registrationId}</p>
+      <p><b>Payment ID:</b> ${data.paymentId}</p>
+      <p><b>Amount Paid:</b> ₹ ${data.amount}</p>
+      
+      <p>Please find your receipt attached as a PDF.</p>
+      <p>- Coffee Championship Team</p>
+    </div>
   `;
 
-  await transporter.sendMail({
-    from: `"National Coffee Championships" <${process.env.SMTP_USER}>`,
-    to: registration.email,
-    subject:
-      "✅ Registration Confirmation – National Coffee Championships 2025",
-    html: emailHtml,
-    attachments: [{ filename: "Registration_Receipt.pdf", content: pdfBuffer }],
+  const pdfBase64 = await generateReceipt({
+    ...data,
+    date: new Date().toLocaleDateString(),
   });
 
-  console.log("✅ Confirmation email sent successfully to", registration.email);
+  return sendZeptoMail({
+    to: data.email,
+    subject: "Registration Confirmation - Coffee Championship",
+    html,
+    attachments: [
+      {
+        name: `Receipt-${data.registrationId}.pdf`,
+        content: pdfBase64,
+      },
+    ],
+  });
 }

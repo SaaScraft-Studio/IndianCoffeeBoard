@@ -4,7 +4,8 @@ import Razorpay from "razorpay";
 import { connectToDB } from "@/lib/mongodb";
 import { Registration } from "@/models/Registration";
 import jsPDF from "jspdf";
-import nodemailer from "nodemailer";
+// import nodemailer from "nodemailer";
+import { sendZeptoMail } from "@/lib/zeptoMail";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -87,7 +88,8 @@ export async function POST(req: NextRequest) {
         registration.registrationId,
         registration.amount,
         registration.competitionName,
-        registration.paymentId
+        registration.paymentId,
+        registration.city
       );
     }
 
@@ -110,9 +112,14 @@ async function sendConfirmation(
   registrationId: string,
   amount: number,
   competition: string,
-  paymentId: string
+  paymentId: string,
+  city: string
 ) {
-  // ✅ Generate PDF
+  if (!customer.email) {
+    console.warn("⚠️ Customer email missing, skipping email:", customer);
+    return;
+  }
+
   const doc = new jsPDF();
   doc.setFontSize(12);
 
@@ -131,36 +138,28 @@ async function sendConfirmation(
   doc.text("Thank you for registering!", 10, 120);
 
   const pdfData = doc.output("arraybuffer");
+  const pdfBase64 = Buffer.from(pdfData).toString("base64");
 
-  // ✅ Email
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
+  const emailHtml = `
+    <div style="font-family: Arial, sans-serif; padding: 16px;">
+      <h2>✅ Registration Successful</h2>
+      <p>Dear ${customer.name},</p>
+      <p>Thank you for registering for the <b>${competition}</b> at the 
+      <b>${city.toUpperCase()}</b> chapter.</p>
+      <p><b>Registration ID:</b> ${registrationId}</p>
+      <p><b>Payment ID:</b> ${paymentId}</p>
+      <p><b>Amount Paid:</b> ₹ ${amount}</p>
+      <p>Please find your receipt attached as a PDF.</p>
+      <p>- Coffee Championship Team</p>
+    </div>
+  `;
 
-  await transporter.sendMail({
-    from: process.env.SMTP_USER,
+  await sendZeptoMail({
     to: customer.email,
-    subject: "Registration Confirmation",
-    html: `
-      <p>Dear <strong>${customer.name}</strong>,</p>
-      <p>Greetings from <b>National Coffee Championships 2025!</b></p>
-      <p>Please see your registration details:</p>
-      <ul>
-        <li><b>Registration Number:</b> ${registrationId}</li>
-        <li><b>Name:</b> ${customer.name}</li>
-        <li><b>Mobile:</b> ${customer.mobile}</li>
-        <li><b>Competition:</b> ${competition}</li>
-        <li><b>Amount:</b> Rs.${amount}</li>
-        <li><b>Payment Reference:</b> ${paymentId}</li>
-      </ul>
-      <p>Thanks,<br/>Organising Team<br/>National Coffee Championships 2025</p>
-    `,
+    subject: "Registration Confirmation - Coffee Championship",
+    html: emailHtml,
     attachments: [
-      { filename: "registration-receipt.pdf", content: Buffer.from(pdfData) },
+      { name: `Receipt-${registrationId}.pdf`, content: pdfBase64 },
     ],
   });
 }
