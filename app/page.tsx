@@ -14,7 +14,7 @@ export default function Home() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-orange-100">
+    <div className="min-h-screen bg-gradient-to-b from-pink-100 via-white to-orange-50">
       <Header />
 
       <main className="container mx-auto px-4 py-12 max-w-7xl">
