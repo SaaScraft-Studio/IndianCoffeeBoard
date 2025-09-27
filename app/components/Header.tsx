@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default function Header() {
   return (
-    <header className="w-full shadow-sm">
+    <header className="w-full shadow-sm ">
       <div className="relative w-full h-auto">
         <Image
           src="/coffeeHeader.jpg"
