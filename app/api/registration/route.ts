@@ -5,24 +5,18 @@ import formidable, { File } from "formidable";
 import fs from "fs";
 import path from "path";
 
-export const dynamic = "force-dynamic";
-
-// Disable Next.js body parsing
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const dynamic = "force-dynamic"; // keeps route dynamic
+export const runtime = "nodejs"; // optional, default is nodejs
+// export const bodyParser = false; // replaces deprecated config.api.bodyParser
 
 export async function POST(req: NextRequest) {
   try {
     await connectToDB();
 
-    // Convert NextRequest to Node IncomingMessage
+    // Convert NextRequest to Node IncomingMessage for formidable
     const reqNode = req as any;
     const incomingMsg = reqNode.req;
 
-    // Prepare uploads folder
     const uploadDir = path.join(process.cwd(), "public/uploads");
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -32,7 +26,6 @@ export async function POST(req: NextRequest) {
       keepExtensions: true,
     });
 
-    // Parse form
     const data: any = await new Promise((resolve, reject) => {
       form.parse(incomingMsg, (err, fields, files) => {
         if (err) return reject(err);
@@ -40,7 +33,6 @@ export async function POST(req: NextRequest) {
       });
     });
 
-    // Handle passport file
     if (data.passportFile) {
       const file = data.passportFile as File;
       const newFilePath = path.join(
@@ -48,10 +40,9 @@ export async function POST(req: NextRequest) {
         file.originalFilename || file.newFilename
       );
       fs.renameSync(file.filepath, newFilePath);
-      data.passportFilePath = `/uploads/${path.basename(newFilePath)}`; // store relative path
+      data.passportFilePath = `/uploads/${path.basename(newFilePath)}`;
     }
 
-    // Required fields validation
     const requiredFields = [
       "name",
       "email",
@@ -65,6 +56,7 @@ export async function POST(req: NextRequest) {
       "acceptedTerms",
       "amount",
     ];
+
     const missingFields = requiredFields.filter((f) => !(f in data));
     if (missingFields.length > 0) {
       return NextResponse.json(
@@ -73,7 +65,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check existing registration
     const exists = await Registration.findOne({
       $or: [
         { email: data.email },
@@ -83,10 +74,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (exists) {
-      if (
-        exists.paymentStatus === "pending" ||
-        exists.paymentStatus === "failed"
-      ) {
+      if (["pending", "failed"].includes(exists.paymentStatus)) {
         return NextResponse.json({
           success: true,
           registration: exists.toObject(),
@@ -101,7 +89,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create new registration
     const newRegistrationDoc = await Registration.create({
       ...data,
       registrationId: `CFC2025${Date.now()}`,
