@@ -59,9 +59,14 @@ export default function Home() {
             Coffee Championships 2025
           </p>
           <div className="mt-4 flex justify-center space-x-6 text-sm">
-            <span className="text-orange-400">
-              Powered by SaasCraft Pvt.Ltd
-            </span>
+            <a
+              href="https://saascraft.studio"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-400 hover:underline"
+            >
+              Powered by SaaScraft Studio (India) Pvt. Ltd.
+            </a>
             <span className="text-gray-400">|</span>
             <span className="text-orange-400">
               Specialty Coffee Association of India
