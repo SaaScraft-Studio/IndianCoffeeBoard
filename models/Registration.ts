@@ -19,6 +19,8 @@ export interface IRegistration extends Document {
   pin: string;
   aadhaarNumber: string;
   competition: string;
+  passportNumber?: string;
+  passportFile?: File | null;
   competitionName?: string; // <-- Add this
   acceptedTerms: boolean;
   amount: number;
@@ -42,6 +44,8 @@ const RegistrationSchema = new Schema<IRegistration>(
     aadhaarNumber: { type: String, required: true, unique: true },
     competition: { type: String, required: true },
     competitionName: { type: String }, // <-- Add this
+    passportNumber: { type: String },
+    passportFile: { type: Schema.Types.Mixed }, // Use Mixed type for File
     acceptedTerms: { type: Boolean, required: true },
     amount: { type: Number, required: true },
     paymentStatus: {

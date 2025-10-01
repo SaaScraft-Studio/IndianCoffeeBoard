@@ -34,6 +34,19 @@ export default function Home() {
             selectedCity={selectedCity}
             onCityChange={setSelectedCity}
           />
+
+          {/* ✅ Mumbai event details */}
+          {selectedCity === "mumbai" && (
+            <div className="text-center m-6 text-gray-700 space-y-1">
+              <p className="font-semibold">Alongside</p>
+              <p className="font-medium">
+                HORECA Business & BAKERY Business 2025
+              </p>
+              <p>Jioworld Convention Centre, BKC - Mumbai</p>
+              <p>30th October to 1st November, 2025.</p>
+            </div>
+          )}
+
           {/* <RegistrationForm city={selectedCity} /> */}
           {selectedCity === "mumbai" ? (
             <RegistrationForm city={selectedCity} />

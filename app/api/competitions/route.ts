@@ -16,28 +16,28 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
-  try {
-    await connectToDB();
-    const body = await req.json();
+// export async function POST(req: Request) {
+//   try {
+//     await connectToDB();
+//     const body = await req.json();
 
-    if (!Array.isArray(body)) {
-      return NextResponse.json(
-        { error: "Request body must be an array of competitions" },
-        { status: 400 }
-      );
-    }
+//     if (!Array.isArray(body)) {
+//       return NextResponse.json(
+//         { error: "Request body must be an array of competitions" },
+//         { status: 400 }
+//       );
+//     }
 
-    const inserted = await Competition.insertMany(body);
-    return NextResponse.json({
-      message: "Competitions inserted successfully",
-      inserted,
-    });
-  } catch (error) {
-    console.error("❌ Error inserting competitions:", error);
-    return NextResponse.json(
-      { error: "Failed to insert competitions" },
-      { status: 500 }
-    );
-  }
-}
+//     const inserted = await Competition.insertMany(body);
+//     return NextResponse.json({
+//       message: "Competitions inserted successfully",
+//       inserted,
+//     });
+//   } catch (error) {
+//     console.error("❌ Error inserting competitions:", error);
+//     return NextResponse.json(
+//       { error: "Failed to insert competitions" },
+//       { status: 500 }
+//     );
+//   }
+// }

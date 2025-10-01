@@ -8,6 +8,8 @@ export interface RegistrationData {
   state: string;
   pin: string;
   competition: string;
+  passportNumber?: string;
+  passportFile?: File | null;
   competitionName?: string;
   amount?: number;
   aadhaarNumber: string;

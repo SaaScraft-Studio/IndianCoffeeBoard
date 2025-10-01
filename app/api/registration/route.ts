@@ -1,17 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectToDB } from "@/lib/mongodb";
 import { Registration } from "@/models/Registration";
+import formidable, { File } from "formidable";
+import fs from "fs";
+import path from "path";
 
 export const dynamic = "force-dynamic";
 
-/**
- * POST /api/registration
- * Create a new registration OR allow retry for pending/failed payment
- */
+// Disable Next.js body parsing
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 export async function POST(req: NextRequest) {
   try {
     await connectToDB();
-    const data = await req.json();
+
+    // Convert NextRequest to Node IncomingMessage
+    const reqNode = req as any;
+    const incomingMsg = reqNode.req;
+
+    // Prepare uploads folder
+    const uploadDir = path.join(process.cwd(), "public/uploads");
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+    const form = formidable({
+      multiples: false,
+      uploadDir,
+      keepExtensions: true,
+    });
+
+    // Parse form
+    const data: any = await new Promise((resolve, reject) => {
+      form.parse(incomingMsg, (err, fields, files) => {
+        if (err) return reject(err);
+        resolve({ ...fields, ...files });
+      });
+    });
+
+    // Handle passport file
+    if (data.passportFile) {
+      const file = data.passportFile as File;
+      const newFilePath = path.join(
+        uploadDir,
+        file.originalFilename || file.newFilename
+      );
+      fs.renameSync(file.filepath, newFilePath);
+      data.passportFilePath = `/uploads/${path.basename(newFilePath)}`; // store relative path
+    }
 
     // Required fields validation
     const requiredFields = [
@@ -28,7 +66,6 @@ export async function POST(req: NextRequest) {
       "amount",
     ];
     const missingFields = requiredFields.filter((f) => !(f in data));
-
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(", ")}` },
@@ -36,7 +73,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check for existing registration
+    // Check existing registration
     const exists = await Registration.findOne({
       $or: [
         { email: data.email },
@@ -50,14 +87,12 @@ export async function POST(req: NextRequest) {
         exists.paymentStatus === "pending" ||
         exists.paymentStatus === "failed"
       ) {
-        // Return all existing fields
         return NextResponse.json({
           success: true,
           registration: exists.toObject(),
           retryAllowed: true,
         });
       }
-
       if (exists.paymentStatus === "success") {
         return NextResponse.json(
           { error: "Email, mobile, or Aadhaar already registered and paid" },
@@ -73,7 +108,6 @@ export async function POST(req: NextRequest) {
       paymentStatus: "pending",
     });
 
-    // Convert to plain object and ensure all sent fields appear
     const newRegistration = { ...newRegistrationDoc.toObject(), ...data };
 
     return NextResponse.json(
@@ -92,7 +126,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-
 export async function PATCH(req: NextRequest) {
   try {
     await connectToDB();
@@ -105,13 +138,9 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    // ✅ Update registration document and return updated one
     const updated = await Registration.findOneAndUpdate(
       { registrationId },
-      {
-        paymentStatus,
-        ...(paymentId && { paymentId }),
-      },
+      { paymentStatus, ...(paymentId && { paymentId }) },
       { new: true }
     );
 

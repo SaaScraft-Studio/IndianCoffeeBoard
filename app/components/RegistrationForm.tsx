@@ -116,6 +116,19 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     } else if (!/^\d{12}$/.test(formData.aadhaarNumber.replace(/\s/g, ""))) {
       newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number";
     }
+
+    if (
+      selectedCompetition &&
+      competitionsRequiringPassport.includes(selectedCompetition.name)
+    ) {
+      if (!formData.passportNumber?.trim()) {
+        newErrors.passportNumber = "Passport number is required";
+      }
+      if (!formData.passportFile) {
+        newErrors.passportFile = "Please upload your passport";
+      }
+    }
+
     if (!formData.acceptedTerms) {
       newErrors.acceptedTerms =
         "You must read and accept the T&C before proceeding";
@@ -123,6 +136,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
+  const competitionsRequiringPassport = [
+    "National Barista Championship",
+    "National Brewer’s Cup",
+    "Coffee in Good Spirits",
+  ];
 
   const handleInputChange = (field: keyof RegistrationData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -184,18 +203,26 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     setPaymentStatus("processing");
 
     try {
-      const payload = {
-        ...formData,
-        amount: selectedCompetition.price,
-        competitionName: selectedCompetition.name,
-      };
+      const formPayload = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          // File object handling
+          if (key === "passportFile" && value instanceof File) {
+            formPayload.append("passportFile", value);
+          } else {
+            formPayload.append(key, value.toString());
+          }
+        }
+      });
+      formPayload.append("amount", selectedCompetition.price.toString());
+      formPayload.append("competitionName", selectedCompetition.name);
+
       // console.log("📡 Sending registration payload:", payload);
 
       // 1️⃣ Create registration in DB
       const regRes = await fetch("/api/registration", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formPayload,
       });
 
       const regData = await regRes.json();
@@ -576,6 +603,67 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             <p className="text-sm text-red-600">{errors.competition}</p>
           )}
         </div>
+
+        {selectedCompetition &&
+          competitionsRequiringPassport.includes(selectedCompetition.name) && (
+            <div className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="passportNumber"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Passport Number *
+                </Label>
+                <Input
+                  id="passportNumber"
+                  placeholder="Enter passport number"
+                  value={formData.passportNumber || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      passportNumber: e.target.value,
+                    }))
+                  }
+                  className={cn(
+                    "border-2 focus:border-orange-500 focus:ring-orange-500",
+                    errors.passportNumber && "border-red-500"
+                  )}
+                />
+                {errors.passportNumber && (
+                  <p className="text-sm text-red-600">
+                    {errors.passportNumber}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="passportUpload"
+                  className="text-sm font-medium text-gray-700"
+                >
+                  Upload Passport *
+                </Label>
+                <Input
+                  id="passportUpload"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      passportFile: e.target.files?.[0] || null,
+                    }))
+                  }
+                  className={cn(
+                    "border-2 focus:border-orange-500 focus:ring-orange-500",
+                    errors.passportFile && "border-red-500"
+                  )}
+                />
+                {errors.passportFile && (
+                  <p className="text-sm text-red-600">{errors.passportFile}</p>
+                )}
+              </div>
+            </div>
+          )}
 
         <div className="space-y-2">
           <Label
