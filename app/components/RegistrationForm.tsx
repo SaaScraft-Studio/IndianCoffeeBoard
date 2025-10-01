@@ -833,7 +833,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             Terms & Conditions *
           </div>
           <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-disc list-outside p-2 space-y-1">
               <li>
                 All coffee competitions will follow the WCE Rules and
                 Regulations combined with the Organizing Body Rules &
