@@ -738,7 +738,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           </>
         )} */}
 
-        <div className="space-y-4">
+        {/* <div className="space-y-4">
           <div className="flex items-start space-x-2">
             <input
               type="checkbox"
@@ -760,7 +760,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
             <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
           )}
 
-          {/* ✅ T&C Box */}
+
           <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
             <ul className="list-disc list-inside space-y-1">
               <li>
@@ -823,6 +823,117 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               </li>
             </ul>
           </div>
+        </div> */}
+
+        <div className="space-y-4">
+          {/* T&C Scrollable Box */}
+          <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                All coffee competitions will follow the WCE Rules and
+                Regulations combined with the Organizing Body Rules &
+                Regulations.
+              </li>
+              <li>
+                Competitors must be at least 18 years of age for competing in
+                the National Coffee Championships.
+              </li>
+              <li>
+                Participant must hold a valid passport or documentation
+                substantiating 24 months of residency, employment or scholastic
+                enrolment.
+              </li>
+              <li>
+                The Winners of the sanctioned National Coffee Championship will
+                represent India in the respective World Coffee Championship.
+              </li>
+              <li>
+                All Rules and Regulations are subject to change based on local
+                and venue health and safety requirements or guidelines.
+              </li>
+              <li>
+                Competitors are allowed to enter only 1 sanctioned Competition
+                throughout the year, according to the announced schedule.
+              </li>
+              <li>
+                Registration slots are limited per competition and per city.
+              </li>
+              <li>
+                Competitors are personally responsible for reading and
+                understanding current Rules & Regulations and scoresheets.
+              </li>
+              <li>
+                Failure to attend official briefing sessions will result in
+                disqualification.
+              </li>
+              <li>
+                Participants are responsible for bringing their own tools,
+                ingredients, and accessories beyond the standard competition
+                stage.
+              </li>
+              <li>
+                Any damage to the competition equipment due to misuse or abuse
+                is grounds for disqualification.
+              </li>
+              <li>
+                Only Indian Origin Coffee Beans may be used for preparing all
+                competition beverages.
+              </li>
+              <li>
+                If a competitor violates 1 or more rules, they may be
+                automatically disqualified.
+              </li>
+              <li>
+                Only the competitor, designated interpreter, and authorized
+                personnel are allowed on stage.
+              </li>
+            </ul>
+
+            {/* ✅ Checkbox inside T&C box */}
+            <div className="mt-4 flex items-start space-x-2">
+              <input
+                type="checkbox"
+                id="readTnc"
+                checked={formData.acceptedTerms || false}
+                onChange={(e) =>
+                  handleInputChange("acceptedTerms", e.target.checked as any)
+                }
+                className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
+              />
+              <label
+                htmlFor="readTnc"
+                className="text-sm text-gray-700 cursor-pointer"
+              >
+                I have read the Terms & Conditions
+              </label>
+            </div>
+          </div>
+            {errors.acceptedTerms && (
+              <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
+            )}
+
+          {/* Final agreement checkbox (optional) */}
+          {/* <div className="flex items-start space-x-2">
+            <input
+              type="checkbox"
+              id="tnc"
+              checked={formData.acceptedTerms || false}
+              onChange={(e) =>
+                handleInputChange("acceptedTerms", e.target.checked as any)
+              }
+              className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
+              disabled={!formData.acceptedTerms} // enforce reading first
+            />
+            <label
+              htmlFor="tnc"
+              className="text-sm text-gray-700 cursor-pointer"
+            >
+              I agree to the Terms & Conditions
+            </label>
+          </div>
+          {errors.acceptedTerms && (
+            <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
+          )} */}
         </div>
 
         {selectedCompetition && (
