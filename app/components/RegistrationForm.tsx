@@ -857,8 +857,17 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               </li>
               <li>
                 Coffee Competition Registration Form: Competitors must complete
-                the Registration Form online at LINK provided.
+                the online form at{" "}
+                <a
+                  href="https://registrations.indiacoffeefestival.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-orange-600 underline break-all"
+                >
+                  https://registrations.indiacoffeefestival.com
+                </a>
               </li>
+
               <li>
                 Registration slots are limited for each competition:
                 <ul className="list-disc list-inside ml-4 space-y-1">
