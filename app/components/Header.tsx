@@ -8,7 +8,7 @@ export default function Header() {
       <div className="relative w-full h-auto ">
         <Image
           src="/coffeeHeader.jpg"
-          alt="India International Coffee Festival 2026 - Coffee Board"
+          alt="India International Coffee Festival 2026 - Coffee Board "
           width={1920}
           height={500}
           className="w-full h-auto object-contain"
