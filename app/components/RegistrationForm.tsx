@@ -835,13 +835,13 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 Regulations.
               </li>
               <li>
-                Competitors must be at least 18 years of age for competing in
-                the National Coffee Championships.
+                Age requirement: Competitors must be at least 18 years of age
+                for competing in the National Coffee Championships.
               </li>
               <li>
-                Participant must hold a valid passport or documentation
-                substantiating 24 months of residency, employment or scholastic
-                enrolment.
+                Nationality: Participant must hold a valid passport from the
+                place they represent or documentation substantiating 24 months
+                of residency, employment or scholastic enrolment.
               </li>
               <li>
                 The Winners of the sanctioned National Coffee Championship will
@@ -856,36 +856,81 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 throughout the year, according to the announced schedule.
               </li>
               <li>
-                Registration slots are limited per competition and per city.
+                Coffee Competition Registration Form: Competitors must complete
+                the Registration Form online at LINK provided.
               </li>
               <li>
-                Competitors are personally responsible for reading and
-                understanding current Rules & Regulations and scoresheets.
+                Registration slots are limited for each competition:
+                <ul className="list-disc list-inside ml-4 space-y-1">
+                  <li>
+                    Barista – 32 slots per city, with a maximum of 5
+                    participants per company.
+                  </li>
+                  <li>
+                    Brewer’s – 25 slots per city, with a maximum of 5
+                    participants per company.
+                  </li>
+                  <li>
+                    CIGS – 25 slots per city, with a maximum of 5 participants
+                    per company.
+                  </li>
+                  <li>
+                    Filter Coffee – 32 slots per city, with a maximum of 5
+                    participants per company.
+                  </li>
+                </ul>
+                All registrations will be considered on a First come, First Paid
+                basis.
               </li>
               <li>
-                Failure to attend official briefing sessions will result in
-                disqualification.
+                Competitor Questions: All competitors are personally responsible
+                for reading and understanding current Rules & Regulations and
+                scoresheets. Competitors are encouraged to ask questions prior
+                to arriving at the coffee competitions.
               </li>
               <li>
-                Participants are responsible for bringing their own tools,
-                ingredients, and accessories beyond the standard competition
-                stage.
+                Competitors will also have the opportunity to ask questions
+                during the official Competitors Meeting (Briefing Session) held
+                prior to the start of the competition. Failure to attend these
+                sessions will result in disqualification from participation.
+                After the briefing, lots would be drawn for the order of
+                performance in the preliminaries of each competition.
+              </li>
+              <li>
+                The Competition Body or Organizing Team will supply the standard
+                competition stage, including sponsored machines, grinders, and
+                other necessary equipment as specified by the World Coffee
+                Events (WCE) competition guidelines. Beyond these standard stage
+                requirements, participants are responsible for bringing their
+                own tools, ingredients, and accessories needed for their
+                performance.
+              </li>
+              <li>
+                All types of disqualifications will result in removal of the
+                competitor from the competition, with no refund of fees.
               </li>
               <li>
                 Any damage to the competition equipment due to misuse or abuse
                 is grounds for disqualification.
               </li>
               <li>
-                Only Indian Origin Coffee Beans may be used for preparing all
-                competition beverages.
+                Coffee Beans: The Competitors may only use Coffee Beans from
+                Indian Origin for preparing all the Beverages for the
+                competition.
               </li>
               <li>
-                If a competitor violates 1 or more rules, they may be
-                automatically disqualified.
+                The Sanctioned Coffee Championship will follow the rules and
+                guidelines as prescribed in the World Coffee Championship
+                official rules & regulations.
               </li>
               <li>
-                Only the competitor, designated interpreter, and authorized
-                personnel are allowed on stage.
+                If a competitor violates 1 or more of these Rules & Regulations,
+                they may be automatically disqualified from the competition.
+              </li>
+              <li>
+                Supporters/Assistants Not Allowed on Stage: Only the competitor,
+                their designated interpreter, and NCC authorized personnel are
+                allowed onstage.
               </li>
             </ul>
 
@@ -908,9 +953,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               </label>
             </div>
           </div>
-            {errors.acceptedTerms && (
-              <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
-            )}
+          {errors.acceptedTerms && (
+            <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
+          )}
 
           {/* Final agreement checkbox (optional) */}
           {/* <div className="flex items-start space-x-2">
