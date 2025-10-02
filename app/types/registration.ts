@@ -70,9 +70,13 @@ export const INDIAN_STATES = [
   "Puducherry",
 ];
 
-export const COMPETITIONS = [
-  { id: "comp1", name: "National Barista Championship", price: 1180 },
-  { id: "comp2", name: "National Brewer’s Cup", price: 1180 },
-  { id: "comp3", name: "Coffee in Good Spirits", price: 1180 },
-  { id: "comp5", name: "Filter Coffee Championship", price: 580 },
-];
+// In your types file (app/types/registration.ts)
+export interface Competition {
+  _id: string;
+  name: string;
+  price: number;
+  passportRequired: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
+}

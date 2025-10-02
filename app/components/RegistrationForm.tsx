@@ -23,7 +23,7 @@ import { Loader2, CreditCard, CheckCircle, XCircle, X } from "lucide-react";
 import {
   RegistrationData,
   INDIAN_STATES,
-  COMPETITIONS,
+  Competition,
 } from "@/app/types/registration";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -53,19 +53,22 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showPDF, setShowPDF] = useState(false);
 
-  const [competitions, setCompetitions] = useState<
-    { _id: string; name: string; price: number }[]
-  >([]);
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
 
   const [loadingCompetitions, setLoadingCompetitions] = useState(true);
 
   useEffect(() => {
     const fetchCompetitions = async () => {
       try {
-        const res = await fetch("/api/competitions");
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions`;
+        console.log("Fetching competitions from:", apiUrl); // Optional: for debugging
+
+        const res = await fetch(apiUrl);
+        if (!res.ok) throw new Error("Failed to fetch competitions");
         const data = await res.json();
         setCompetitions(data);
       } catch (err) {
+        console.error("Error fetching competitions:", err);
         toast({
           title: "Error",
           description: "Failed to load competitions",
@@ -77,17 +80,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     };
     fetchCompetitions();
   }, []);
-
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      if ((window as any).Razorpay) return resolve(true);
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -117,10 +109,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number";
     }
 
-    if (
-      selectedCompetition &&
-      competitionsRequiringPassport.includes(selectedCompetition.name)
-    ) {
+    if (selectedCompetition?.passportRequired) {
       if (!formData.passportNumber?.trim()) {
         newErrors.passportNumber = "Passport number is required";
       }
@@ -137,11 +126,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const competitionsRequiringPassport = [
-    "National Barista Championship",
-    "National Brewer’s Cup",
-    "Coffee in Good Spirits",
-  ];
+  // const competitionsRequiringPassport = [
+  //   "National Barista Championship",
+  //   "National Brewer’s Cup",
+  //   "Coffee in Good Spirits",
+  // ];
 
   const handleInputChange = (field: keyof RegistrationData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -170,9 +159,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-    // console.log("🔄 handleSubmitAndPay called");
-    // console.log("📦 Current formData:", formData);
-    // console.log("📦 Available competitions:", competitions);
+    console.log("🔄 handleSubmitAndPay called");
+    console.log("📦 Current formData:", formData);
 
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
@@ -187,7 +175,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const selectedCompetition = competitions.find(
       (c) => c._id === formData.competition
     );
-    // console.log("🎯 selectedCompetition:", selectedCompetition);
+    console.log("🎯 selectedCompetition:", selectedCompetition);
 
     if (!selectedCompetition) {
       console.error("❌ No competition found for:", formData.competition);
@@ -203,49 +191,80 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     setPaymentStatus("processing");
 
     try {
+      // 1️⃣ Create FormData for multipart/form-data
       const formPayload = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          // File object handling
-          if (key === "passportFile" && value instanceof File) {
-            formPayload.append("passportFile", value);
-          } else {
-            formPayload.append(key, value.toString());
-          }
-        }
-      });
+
+      // Append all form fields
+      formPayload.append("competition", formData.competition || "");
       formPayload.append("amount", selectedCompetition.price.toString());
-      formPayload.append("competitionName", selectedCompetition.name);
+      formPayload.append("amount", selectedCompetition.name || "");
+      formPayload.append("name", formData.name || "");
+      formPayload.append("email", formData.email || "");
+      formPayload.append("mobile", formData.mobile || "");
+      formPayload.append("address", formData.address || "");
+      formPayload.append("state", formData.state || "");
+      formPayload.append("pin", formData.pin || "");
+      formPayload.append(
+        "aadhaarNumber",
+        formData.aadhaarNumber?.replace(/\s/g, "") || ""
+      );
+      formPayload.append(
+        "acceptedTerms",
+        formData.acceptedTerms?.toString() || "false"
+      );
+      formPayload.append("city", city);
 
-      // console.log("📡 Sending registration payload:", payload);
+      // Append passport fields if required
+      if (selectedCompetition.passportRequired) {
+        formPayload.append("passportNumber", formData.passportNumber || "");
+        if (formData.passportFile) {
+          formPayload.append("passportFile", formData.passportFile);
+        }
+      }
 
-      // 1️⃣ Create registration in DB
-      const regRes = await fetch("/api/registration", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: formPayload,
-      });
+      console.log("📡 Sending registration to external API...");
+
+      // 2️⃣ Submit registration to external API
+      const regRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration`,
+        {
+          method: "POST",
+          body: formPayload, // No Content-Type header for FormData - browser sets it automatically
+        }
+      );
 
       const regData = await regRes.json();
-      // console.log("Registration API response:", regData);
+      console.log("📝 Registration API response:", regData);
 
       if (!regRes.ok) {
-        console.error("Registration failed:", regData);
-        toast({
-          // title: "Registration Failed",
-          description: regData.error || "Error creating registration",
-          variant: "destructive",
-        });
+        console.error("❌ Registration failed:", regData);
+
+        if (regRes.status === 409) {
+          toast({
+            title: "Already Registered",
+            description:
+              "You have already completed registration for this competition.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration Failed",
+            description: regData.error || "Error creating registration",
+            variant: "destructive",
+          });
+        }
+
         setLoading(false);
         setPaymentStatus("idle");
         return;
       }
 
-      const { registration } = regData;
-      // console.log("🧾 Created registration:", registration);
+      const { registration, retryAllowed } = regData;
+      console.log("✅ Registration created:", registration);
 
+      // 3️⃣ Check if payment is already successful
       if (registration.paymentStatus === "success") {
-        // console.log("Already paid, skipping Razorpay.");
+        console.log("🎉 Already paid, registration complete!");
         toast({
           title: "Already Registered",
           description: "Your payment was successful. Registration complete.",
@@ -255,121 +274,51 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         return;
       }
 
-      // 2️⃣ Create Razorpay order
-      // console.log(
-      //   "💰 Creating Razorpay order for amount:",
-      //   selectedCompetition.price
-      // );
-      const orderRes = await fetch("/api/payment/order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: selectedCompetition.price,
-          currency: "INR",
-        }),
-      });
-
-      const { order } = await orderRes.json();
-      // console.log("✅ Razorpay order created:", order);
-
-      if (!orderRes.ok || !order) {
-        console.error("❌ Failed to create Razorpay order");
-        toast({
-          title: "Payment Failed",
-          description: "Could not create payment order. Try again.",
-          variant: "destructive",
-        });
-        setPaymentStatus("idle");
-        setLoading(false);
-        return;
-      }
-
-      // 3️⃣ Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        console.error("❌ Could not load Razorpay script");
-        toast({
-          title: "Payment Failed",
-          description: "Unable to load payment gateway. Please try again.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        setPaymentStatus("idle");
-        return;
-      }
-
-      // 4️⃣ Open Razorpay checkout
-      // console.log("🪟 Opening Razorpay checkout...");
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Competition Registration",
-        description: "Complete your payment",
-        order_id: order.id,
-        prefill: {
-          name: registration.name,
-          email: registration.email,
-          contact: registration.mobile,
-        },
-        handler: async function (response: any) {
-          // console.log("✅ Payment success callback:", response);
-
-          const payRes = await fetch("/api/payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              registrationId: registration.registrationId,
-              amount: selectedCompetition.price,
-              currency: "INR",
-              paymentId: response.razorpay_payment_id,
-              orderId: response.razorpay_order_id,
-              signature: response.razorpay_signature,
-              customerInfo: {
-                name: registration.name,
-                email: registration.email,
-                mobile: registration.mobile,
-              },
-            }),
-          });
-
-          const data = await payRes.json();
-          // console.log("📩 Payment verification response:", data);
-
-          setLoading(false);
-          if (data.success) {
-            setPaymentStatus("success");
-            toast({
-              title: "Payment Successful",
-              description:
-                "Your registration is confirmed! Check email for receipt.",
-            });
-            setTimeout(() => resetForm(), 3000);
-          } else {
-            setPaymentStatus("failed");
-            toast({
-              title: "Payment Failed",
-              description: "There was an issue completing your payment.",
-              variant: "destructive",
-            });
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            console.warn("🛑 Razorpay modal closed by user");
-            setPaymentStatus("idle");
-            setLoading(false);
+      // 4️⃣ Initiate payment with Instamojo
+      console.log("💰 Initiating Instamojo payment...");
+      const paymentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payment/initiate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        },
-      };
+          body: JSON.stringify({
+            registrationId: registration.registrationId,
+            amount: selectedCompetition.price,
+            phone: `91${formData.mobile}`,
+          }),
+        }
+      );
 
-      new (window as any).Razorpay(options).open();
+      const paymentData = await paymentRes.json();
+      console.log("💳 Payment initiation response:", paymentData);
+
+      if (!paymentRes.ok || !paymentData.success) {
+        console.error("❌ Failed to initiate payment");
+        toast({
+          title: "Payment Failed",
+          description:
+            paymentData.error || "Could not initiate payment. Try again.",
+          variant: "destructive",
+        });
+        setPaymentStatus("idle");
+        setLoading(false);
+        return;
+      }
+
+      // 5️⃣ Redirect to Instamojo payment page
+      console.log("🔗 Redirecting to Instamojo:", paymentData.redirectUrl);
+      window.location.href = paymentData.redirectUrl;
+
+      // Note: Payment status will be updated via webhook, not immediately
+      // We'll handle this differently since it's a redirect flow
     } catch (err) {
       console.error("💥 Unexpected error:", err);
       setLoading(false);
       setPaymentStatus("failed");
       toast({
-        title: "Payment Failed",
+        title: "Registration Failed",
         description:
           err instanceof Error
             ? err.message
@@ -379,9 +328,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     }
   };
 
-  const handleRetryPayment = () => {
+  const handleRetryPayment = async () => {
     setPaymentStatus("idle");
-    handleSubmitAndPay();
+    // For Instamojo flow, we need to re-initiate the payment
+    await handleSubmitAndPay();
   };
 
   const selectedCompetition = competitions.find(
@@ -542,35 +492,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           )}
         </div>
 
-        {/* <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">
-            Select Competition *
-          </Label>
-          <Select
-            value={formData.competition || ""}
-            onValueChange={(value) => handleInputChange("competition", value)}
-          >
-            <SelectTrigger
-              className={cn(
-                "border-2 focus:border-orange-500 focus:ring-orange-500",
-                errors.competition && "border-red-500"
-              )}
-            >
-              <SelectValue placeholder="Choose competition" />
-            </SelectTrigger>
-            <SelectContent>
-              {COMPETITIONS.map((comp) => (
-                <SelectItem key={comp.id} value={comp.id}>
-                  {comp.name} (₹ {comp.price.toLocaleString("en-IN")})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.competition && (
-            <p className="text-sm text-red-600">{errors.competition}</p>
-          )}
-        </div> */}
-
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
             Select Competition *
@@ -605,66 +526,63 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           )}
         </div>
 
-        {selectedCompetition &&
-          competitionsRequiringPassport.includes(selectedCompetition.name) && (
-            <div className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="passportNumber"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Passport Number *
-                </Label>
-                <Input
-                  id="passportNumber"
-                  placeholder="Enter passport number"
-                  value={formData.passportNumber || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      passportNumber: e.target.value,
-                    }))
-                  }
-                  className={cn(
-                    "border-2 focus:border-orange-500 focus:ring-orange-500",
-                    errors.passportNumber && "border-red-500"
-                  )}
-                />
-                {errors.passportNumber && (
-                  <p className="text-sm text-red-600">
-                    {errors.passportNumber}
-                  </p>
+        {selectedCompetition?.passportRequired && (
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label
+                htmlFor="passportNumber"
+                className="text-sm font-medium text-gray-700"
+              >
+                Passport Number *
+              </Label>
+              <Input
+                id="passportNumber"
+                placeholder="Enter passport number"
+                value={formData.passportNumber || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    passportNumber: e.target.value,
+                  }))
+                }
+                className={cn(
+                  "border-2 focus:border-orange-500 focus:ring-orange-500",
+                  errors.passportNumber && "border-red-500"
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label
-                  htmlFor="passportUpload"
-                  className="text-sm font-medium text-gray-700"
-                >
-                  Upload Passport *
-                </Label>
-                <Input
-                  id="passportUpload"
-                  type="file"
-                  accept="image/*,.pdf"
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      passportFile: e.target.files?.[0] || null,
-                    }))
-                  }
-                  className={cn(
-                    "border-2 focus:border-orange-500 focus:ring-orange-500",
-                    errors.passportFile && "border-red-500"
-                  )}
-                />
-                {errors.passportFile && (
-                  <p className="text-sm text-red-600">{errors.passportFile}</p>
-                )}
-              </div>
+              />
+              {errors.passportNumber && (
+                <p className="text-sm text-red-600">{errors.passportNumber}</p>
+              )}
             </div>
-          )}
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="passportUpload"
+                className="text-sm font-medium text-gray-700"
+              >
+                Upload Passport *
+              </Label>
+              <Input
+                id="passportUpload"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    passportFile: e.target.files?.[0] || null,
+                  }))
+                }
+                className={cn(
+                  "border-2 focus:border-orange-500 focus:ring-orange-500",
+                  errors.passportFile && "border-red-500"
+                )}
+              />
+              {errors.passportFile && (
+                <p className="text-sm text-red-600">{errors.passportFile}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label
@@ -694,142 +612,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           )}
         </div>
 
-        {/* <div className="flex items-start space-x-2">
-          <input
-            type="checkbox"
-            id="tnc"
-            checked={formData.acceptedTerms || false}
-            onChange={(e) =>
-              handleInputChange("acceptedTerms", e.target.checked as any)
-            }
-            className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
-          />
-          <label htmlFor="tnc" className="text-sm text-gray-700 cursor-pointer">
-            I have read and agree to the{" "}
-            <button
-              type="button"
-              onClick={() => setShowPDF(true)} // ✅ open inline viewer
-              className="text-orange-600 underline hover:text-orange-700 inline-flex items-center"
-            >
-              Terms & Conditions
-            </button>
-          </label>
-        </div>
-        {errors.acceptedTerms && (
-          <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
-        )} */}
-
-        {/* ✅ Simple PDF Viewer (No Background) */}
-        {/* {showPDF && (
-          <>
-            <div className="fixed inset-0 bg-white z-40">
-              <embed
-                src="/competition-guidelines.pdf#toolbar=0&navpanes=0&scrollbar=0"
-                type="application/pdf"
-                className="w-full h-full"
-              />
-            </div>
-            <button
-              onClick={() => setShowPDF(false)}
-              className="fixed top-1 right-4 z-50 bg-white p-2 rounded-full shadow hover:bg-red-50"
-            >
-              <X className="w-6 h-6 text-red-600" />
-            </button>
-          </>
-        )} */}
-
-        {/* <div className="space-y-4">
-          <div className="flex items-start space-x-2">
-            <input
-              type="checkbox"
-              id="tnc"
-              checked={formData.acceptedTerms || false}
-              onChange={(e) =>
-                handleInputChange("acceptedTerms", e.target.checked as any)
-              }
-              className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
-            />
-            <label
-              htmlFor="tnc"
-              className="text-sm text-gray-700 cursor-pointer"
-            >
-              I have read and agree to the Terms & Conditions
-            </label>
-          </div>
-          {errors.acceptedTerms && (
-            <p className="text-sm text-red-600">{errors.acceptedTerms}</p>
-          )}
-
-
-          <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
-            <ul className="list-disc list-inside space-y-1">
-              <li>
-                All coffee competitions will follow the WCE Rules and
-                Regulations combined with the Organizing Body Rules &
-                Regulations.
-              </li>
-              <li>
-                Competitors must be at least 18 years of age for competing in
-                the National Coffee Championships.
-              </li>
-              <li>
-                Participant must hold a valid passport or documentation
-                substantiating 24 months of residency, employment or scholastic
-                enrolment.
-              </li>
-              <li>
-                The Winners of the sanctioned National Coffee Championship will
-                represent India in the respective World Coffee Championship.
-              </li>
-              <li>
-                All Rules and Regulations are subject to change based on local
-                and venue health and safety requirements or guidelines.
-              </li>
-              <li>
-                Competitors are allowed to enter only 1 sanctioned Competition
-                throughout the year, according to the announced schedule.
-              </li>
-              <li>
-                Registration slots are limited per competition and per city.
-              </li>
-              <li>
-                Competitors are personally responsible for reading and
-                understanding current Rules & Regulations and scoresheets.
-              </li>
-              <li>
-                Failure to attend official briefing sessions will result in
-                disqualification.
-              </li>
-              <li>
-                Participants are responsible for bringing their own tools,
-                ingredients, and accessories beyond the standard competition
-                stage.
-              </li>
-              <li>
-                Any damage to the competition equipment due to misuse or abuse
-                is grounds for disqualification.
-              </li>
-              <li>
-                Only Indian Origin Coffee Beans may be used for preparing all
-                competition beverages.
-              </li>
-              <li>
-                If a competitor violates 1 or more rules, they may be
-                automatically disqualified.
-              </li>
-              <li>
-                Only the competitor, designated interpreter, and authorized
-                personnel are allowed on stage.
-              </li>
-            </ul>
-          </div>
-        </div> */}
-
         <div className="space-y-4">
           {/* T&C Scrollable Box */}
-          <div
-            className="text-sm font-medium text-gray-700"
-          >
+          <div className="text-sm font-medium text-gray-700">
             Terms & Conditions *
           </div>
           <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
