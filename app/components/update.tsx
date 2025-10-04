@@ -19,7 +19,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Loader2, CreditCard, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CreditCard, CheckCircle, XCircle, X } from "lucide-react";
 import {
   RegistrationData,
   INDIAN_STATES,
@@ -51,14 +51,17 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     "idle" | "processing" | "success" | "failed"
   >("idle");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPDF, setShowPDF] = useState(false);
+
   const [competitions, setCompetitions] = useState<Competition[]>([]);
+
   const [loadingCompetitions, setLoadingCompetitions] = useState(true);
 
   useEffect(() => {
     const fetchCompetitions = async () => {
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions`;
-        console.log("Fetching competitions from:", apiUrl);
+        console.log("Fetching competitions from:", apiUrl); // Optional: for debugging
 
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error("Failed to fetch competitions");
@@ -76,7 +79,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
     };
     fetchCompetitions();
-  }, [toast]);
+  }, []);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -123,10 +126,13 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (
-    field: keyof RegistrationData,
-    value: string | boolean
-  ) => {
+  // const competitionsRequiringPassport = [
+  //   "National Barista Championship",
+  //   "National Brewer’s Cup",
+  //   "Coffee in Good Spirits",
+  // ];
+
+  const handleInputChange = (field: keyof RegistrationData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: "" }));
   };
@@ -134,6 +140,22 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   const formatAadhaar = (value: string) => {
     const cleaned = value.replace(/\s/g, "");
     return cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
+
+  const resetForm = () => {
+    setFormData({
+      city,
+      name: "",
+      email: "",
+      mobile: "",
+      address: "",
+      state: "",
+      pin: "",
+      competition: "",
+      aadhaarNumber: "",
+      acceptedTerms: false,
+    });
+    setPaymentStatus("idle");
   };
 
   const handleSubmitAndPay = async () => {
@@ -172,7 +194,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       // 1️⃣ Create FormData for multipart/form-data
       const formPayload = new FormData();
 
-      // Append all form fields as expected by backend
+      // Append all form fields
+      formPayload.append("competition", formData.competition || "");
+      formPayload.append("amount", selectedCompetition.price.toString());
+      formPayload.append("amount", selectedCompetition.name || "");
       formPayload.append("name", formData.name || "");
       formPayload.append("email", formData.email || "");
       formPayload.append("mobile", formData.mobile || "");
@@ -183,13 +208,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         "aadhaarNumber",
         formData.aadhaarNumber?.replace(/\s/g, "") || ""
       );
-      formPayload.append("competition", formData.competition || "");
-      formPayload.append("competitionName", selectedCompetition.name || "");
-      formPayload.append("amount", selectedCompetition.price.toString());
       formPayload.append(
         "acceptedTerms",
-        formData.acceptedTerms ? "true" : "false"
+        formData.acceptedTerms?.toString() || "false"
       );
+      formPayload.append("city", city);
 
       // Append passport fields if required
       if (selectedCompetition.passportRequired) {
@@ -199,64 +222,97 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         }
       }
 
-      console.log("📡 Sending registration + payment request...");
+      console.log("📡 Sending registration to external API...");
 
-      // 2️⃣ Submit to register-and-pay endpoint (combines registration + payment)
-      const paymentRes = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payment/register-and-pay`,
+      // 2️⃣ Submit registration to external API
+      const regRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration`,
         {
           method: "POST",
-          body: formPayload, // No Content-Type header for FormData
+          body: formPayload, // No Content-Type header for FormData - browser sets it automatically
         }
       );
 
-      const paymentData = await paymentRes.json();
-      console.log("💳 Register-and-pay API response:", paymentData);
+      const regData = await regRes.json();
+      console.log("📝 Registration API response:", regData);
 
-      if (!paymentRes.ok) {
-        console.error("❌ Registration/Payment failed:", paymentData);
+      if (!regRes.ok) {
+        console.error("❌ Registration failed:", regData);
 
-        // Handle duplicate registration with successful payment
-        if (paymentRes.status === 409) {
+        if (regRes.status === 409) {
           toast({
             title: "Already Registered",
             description:
               "You have already completed registration for this competition.",
             variant: "destructive",
           });
-          setPaymentStatus("failed");
-          setLoading(false);
-          return;
+        } else {
+          toast({
+            title: "Registration Failed",
+            description: regData.error || "Error creating registration",
+            variant: "destructive",
+          });
         }
 
+        setLoading(false);
+        setPaymentStatus("idle");
+        return;
+      }
+
+      const { registration, retryAllowed } = regData;
+      console.log("✅ Registration created:", registration);
+
+      // 3️⃣ Check if payment is already successful
+      if (registration.paymentStatus === "success") {
+        console.log("🎉 Already paid, registration complete!");
         toast({
-          title: "Registration/Payment Failed",
-          description:
-            paymentData.error ||
-            paymentData.message ||
-            "Error processing registration",
-          variant: "destructive",
+          title: "Already Registered",
+          description: "Your payment was successful. Registration complete.",
         });
-        setPaymentStatus("failed");
+        setPaymentStatus("success");
         setLoading(false);
         return;
       }
 
-      // 3️⃣ Handle successful payment initiation
-      if (paymentData.payment_url) {
-        console.log("🔗 Redirecting to Instamojo:", paymentData.payment_url);
-        // Redirect user to Instamojo payment page
-        window.location.href = paymentData.payment_url;
-      } else {
-        console.error("❌ No payment URL received");
+      // 4️⃣ Initiate payment with Instamojo
+      console.log("💰 Initiating Instamojo payment...");
+      const paymentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payment/initiate`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            registrationId: registration.registrationId,
+            amount: selectedCompetition.price,
+            phone: `91${formData.mobile}`,
+          }),
+        }
+      );
+
+      const paymentData = await paymentRes.json();
+      console.log("💳 Payment initiation response:", paymentData);
+
+      if (!paymentRes.ok || !paymentData.success) {
+        console.error("❌ Failed to initiate payment");
         toast({
-          title: "Payment Error",
-          description: "Could not initiate payment. Please try again.",
+          title: "Payment Failed",
+          description:
+            paymentData.error || "Could not initiate payment. Try again.",
           variant: "destructive",
         });
-        setPaymentStatus("failed");
+        setPaymentStatus("idle");
         setLoading(false);
+        return;
       }
+
+      // 5️⃣ Redirect to Instamojo payment page
+      console.log("🔗 Redirecting to Instamojo:", paymentData.redirectUrl);
+      window.location.href = paymentData.redirectUrl;
+
+      // Note: Payment status will be updated via webhook, not immediately
+      // We'll handle this differently since it's a redirect flow
     } catch (err) {
       console.error("💥 Unexpected error:", err);
       setLoading(false);
@@ -273,25 +329,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleRetryPayment = async () => {
-    // For retry, we need to use the retry endpoint
-    if (!formData.competition) {
-      toast({
-        title: "Error",
-        description: "Please select a competition to retry payment.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // You would need to store the registration ID from a previous attempt
-      // For now, we'll just resubmit the entire form
-      await handleSubmitAndPay();
-    } catch (error) {
-      setLoading(false);
-      setPaymentStatus("failed");
-    }
+    setPaymentStatus("idle");
+    // For Instamojo flow, we need to re-initiate the payment
+    await handleSubmitAndPay();
   };
 
   const selectedCompetition = competitions.find(
@@ -310,7 +350,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Form fields remain the same as your original code */}
+        {/* --- Form fields (same as your original code) --- */}
+        {/* --- Terms & Conditions, PDF Viewer, Fee display --- */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">

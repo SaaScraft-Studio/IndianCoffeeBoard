@@ -1,5 +1,6 @@
 export interface RegistrationData {
   _id?: string;
+  registrationId: string;
   city: "mumbai" | "delhi" | "bangalore";
   name: string;
   email: string;
@@ -10,14 +11,15 @@ export interface RegistrationData {
   competition: string;
   passportNumber?: string;
   passportFile?: File | null;
-  competitionName?: string;
+  passportUrl?: string;
   amount?: number;
   aadhaarNumber: string;
+  competitionName: string;
   acceptedTerms: boolean;
   paymentStatus: "pending" | "success" | "failed";
   paymentId?: string;
-  registrationId?: string;
-  createdAt?: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface PaymentData {
