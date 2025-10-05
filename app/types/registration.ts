@@ -7,6 +7,7 @@ export interface RegistrationData {
   mobile: string;
   address: string;
   state: string;
+  workPlace: string;
   pin: string;
   competition: string;
   passportNumber?: string;

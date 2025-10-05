@@ -93,6 +93,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     }
     if (!formData.address?.trim()) newErrors.address = "Address is required";
     if (!formData.state) newErrors.state = "State is required";
+    if (!formData.workPlace) newErrors.workPlace = "Work place is required";
     if (!formData.pin?.trim()) {
       newErrors.pin = "PIN code is required";
     } else if (!/^\d{6}$/.test(formData.pin)) {
@@ -119,6 +120,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       newErrors.acceptedTerms =
         "You must read and accept the T&C before proceeding";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -178,6 +180,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       formPayload.append("mobile", formData.mobile || "");
       formPayload.append("address", formData.address || "");
       formPayload.append("state", formData.state || "");
+      formPayload.append("workPlace", formData.workPlace || "");
       formPayload.append("pin", formData.pin || "");
       formPayload.append(
         "aadhaarNumber",
@@ -447,6 +450,28 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           </Select>
           {errors.state && (
             <p className="text-sm text-red-600">{errors.state}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label
+            htmlFor="workPlace"
+            className="text-sm font-medium text-gray-700"
+          >
+            Work Place / Home Brewer *
+          </Label>
+          <Input
+            id="workPlace"
+            placeholder="work place / home brewer"
+            value={formData.workPlace || ""}
+            onChange={(e) => handleInputChange("workPlace", e.target.value)}
+            className={cn(
+              "border-2 focus:border-orange-500 focus:ring-orange-500",
+              errors.workPlace && "border-red-500"
+            )}
+          />
+          {errors.workPlace && (
+            <p className="text-sm text-red-600">{errors.workPlace}</p>
           )}
         </div>
 
