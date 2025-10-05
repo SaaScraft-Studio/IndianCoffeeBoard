@@ -116,8 +116,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
     }
 
-    if (!formData.acceptedTerms) {
-      newErrors.acceptedTerms =
+    if (!formData.accepted) {
+      newErrors.accepted =
         "You must read and accept the T&C before proceeding";
     }
 
@@ -190,8 +190,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       formPayload.append("competitionName", selectedCompetition.name || "");
       formPayload.append("amount", selectedCompetition.price.toString());
       formPayload.append(
-        "acceptedTerms",
-        formData.acceptedTerms ? "true" : "false"
+        "accepted",
+        formData.accepted ? "true" : "false"
       );
 
       // Append passport fields if required
@@ -598,7 +598,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         <div className="space-y-4">
           {/* T&C Scrollable Box */}
           <div className="text-sm font-medium text-gray-700">
-            Terms & Conditions *
+            Terms& Conditions *
           </div>
           <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
             <ul className="list-disc list-outside p-2 space-y-1">
@@ -749,7 +749,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 handleInputChange("acceptedTerms", e.target.checked as any)
               }
               className="mt-1 h-4 w-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500 cursor-pointer"
-              disabled={!formData.acceptedTerms} // enforce reading first
+              disabled={!formData.acceptedTerms} //  enforce reading first
             />
             <label
               htmlFor="tnc"
