@@ -595,7 +595,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         <div className="space-y-4">
           {/* T&C Scrollable Box */}
           <div className="text-sm font-medium text-gray-700">
-            Terms& Conditions *
+            Terms & Conditions *
           </div>
           <div className="max-h-60 overflow-y-auto border border-orange-200 bg-orange-50 rounded-lg p-4 text-sm text-gray-700 space-y-2">
             <ul className="list-disc list-outside p-2 space-y-1">
