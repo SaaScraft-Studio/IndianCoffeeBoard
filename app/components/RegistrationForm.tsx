@@ -116,8 +116,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
     }
 
-    if (!formData.accepted) {
-      newErrors.accepted =
+    if (!formData.acceptedTerms) {
+      newErrors.acceptedTerms =
         "You must read and accept the T&C before proceeding";
     }
 
@@ -189,10 +189,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       formPayload.append("competition", formData.competition || "");
       formPayload.append("competitionName", selectedCompetition.name || "");
       formPayload.append("amount", selectedCompetition.price.toString());
-      formPayload.append(
-        "accepted",
-        formData.accepted ? "true" : "false"
-      );
+      formPayload.append("accepted", formData.acceptedTerms ? "true" : "false");
 
       // Append passport fields if required
       if (selectedCompetition.passportRequired) {
