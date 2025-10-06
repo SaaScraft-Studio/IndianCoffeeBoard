@@ -782,7 +782,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           </div>
         )}
 
-        <div className="pt-6">
+        {/* <div className="pt-6">
           {paymentStatus === "success" ? (
             <div className="text-center space-y-4">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto" />
@@ -815,31 +815,31 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 </Button>
               </div>
             </div>
+          ) : ( */}
+        <Button
+          onClick={handleSubmitAndPay}
+          className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold py-4 text-lg rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+          disabled={loading || paymentStatus === "processing"}
+        >
+          {loading || paymentStatus === "processing" ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              {paymentStatus === "processing"
+                ? "Processing Payment..."
+                : "Submitting..."}
+            </>
           ) : (
-            <Button
-              onClick={handleSubmitAndPay}
-              className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white font-semibold py-4 text-lg rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
-              disabled={loading || paymentStatus === "processing"}
-            >
-              {loading || paymentStatus === "processing" ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {paymentStatus === "processing"
-                    ? "Processing Payment..."
-                    : "Submitting..."}
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Submit & Pay{" "}
-                  {selectedCompetition
-                    ? `₹ ${selectedCompetition.price.toLocaleString("en-IN")}`
-                    : ""}
-                </>
-              )}
-            </Button>
+            <>
+              <CreditCard className="w-5 h-5 mr-2" />
+              Submit & Pay{" "}
+              {selectedCompetition
+                ? `₹ ${selectedCompetition.price.toLocaleString("en-IN")}`
+                : ""}
+            </>
           )}
-        </div>
+        </Button>
+        {/* )} */}
+        {/* </div> */}
       </CardContent>
     </Card>
   );

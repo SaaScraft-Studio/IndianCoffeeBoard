@@ -28,7 +28,7 @@ interface RegistrationDetails {
   pin: string;
   aadhaarNumber: string;
   competitionName: string;
-  city: string;
+  competitionCity: string;
   amount: number;
   paymentStatus: string;
   createdAt: string;
@@ -107,7 +107,7 @@ export default function RegistrationSuccessPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-4xl mx-auto shadow-2xl bg-white/95 backdrop-blur">
-          <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-center">
+          <CardHeader className="bg-gradient-to-r from-green-500 to-green-600 text-white text-center">
             <div className="flex justify-center mb-4">
               <CheckCircle className="h-16 w-16" />
             </div>
@@ -261,7 +261,7 @@ export default function RegistrationSuccessPage() {
                     <div>
                       <p className="font-medium">Competition City</p>
                       <p className="text-sm text-gray-600 capitalize">
-                        {registration?.city || "N/A"}
+                        {registration?.competitionCity || "N/A"}
                       </p>
                     </div>
                   </div>
@@ -288,7 +288,7 @@ export default function RegistrationSuccessPage() {
                     <p className="font-medium text-orange-800">
                       Confirmation Email Sent
                     </p>
-                    <p className="text-sm text-orange-600">
+                    <p className="text-sm text-green-600">
                       A detailed confirmation has been sent to{" "}
                       {registration?.email || "your email"}
                     </p>
