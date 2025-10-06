@@ -123,7 +123,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
     if (!formData.acceptedTerms) {
       newErrors.acceptedTerms =
-        "You must read and accept the T&C before proceeding";
+        "You must scroll the T&C box to read and accept before proceeding.";
     }
 
     setErrors(newErrors);
