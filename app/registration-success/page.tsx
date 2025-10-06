@@ -1,11 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, Download, Mail, Phone } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  CheckCircle,
+  Download,
+  Home,
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Calendar,
+} from "lucide-react";
 
 interface RegistrationDetails {
   _id: string;
@@ -13,55 +22,53 @@ interface RegistrationDetails {
   name: string;
   email: string;
   mobile: string;
+  address: string;
+  state: string;
+  workPlace: string;
+  pin: string;
+  aadhaarNumber: string;
   competitionName: string;
+  city: string;
   amount: number;
   paymentStatus: string;
   createdAt: string;
 }
 
 export default function RegistrationSuccessPage() {
-  const searchParams = useSearchParams();
-  const registrationId = searchParams.get("id");
   const [registration, setRegistration] = useState<RegistrationDetails | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const registrationId = searchParams.get("id");
 
   useEffect(() => {
-    const fetchRegistrationDetails = async () => {
-      if (!registrationId) {
-        setError("No registration ID provided");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration/${registrationId}`
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch registration details");
-        }
-
-        const data = await response.json();
-        setRegistration(data);
-      } catch (err) {
-        console.error("Error fetching registration:", err);
-        setError("Failed to load registration details");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRegistrationDetails();
+    if (registrationId) {
+      fetchRegistrationDetails(registrationId);
+    } else {
+      setIsLoading(false);
+    }
   }, [registrationId]);
 
-  const handleDownloadReceipt = () => {
-    // Generate and download PDF receipt
-    // You can implement this with a PDF generation service or library
-    alert("Receipt download functionality will be implemented soon!");
+  const fetchRegistrationDetails = async (id: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration/${id}`
+      );
+      if (response.ok) {
+        const registrationData = await response.json();
+        setRegistration(registrationData);
+      }
+    } catch (error) {
+      console.error("Failed to fetch registration details:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const formatDate = (dateString: string) => {
@@ -74,42 +81,22 @@ export default function RegistrationSuccessPage() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">
-            Loading your registration details...
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const formatAadhaar = (aadhaar: string) => {
+    return aadhaar.replace(/(\d{4})(?=\d)/g, "$1 ");
+  };
 
-  if (error || !registration) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="pt-6 text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Phone className="w-8 h-8 text-red-600" />
-            </div>
-            <h2 className="text-xl font-semibold text-red-700 mb-2">
-              Registration Details Not Found
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold mb-2">
+              Loading Registration Details
             </h2>
-            <p className="text-gray-600 mb-6">
-              {error ||
-                "We couldn't find your registration details. Please contact support if you believe this is an error."}
+            <p className="text-gray-600">
+              Please wait while we fetch your registration information...
             </p>
-            <div className="space-y-3">
-              <Button asChild className="w-full">
-                <Link href="/">Return to Home</Link>
-              </Button>
-              <Button variant="outline" asChild className="w-full">
-                <Link href="/contact">Contact Support</Link>
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -117,194 +104,220 @@ export default function RegistrationSuccessPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white">
-      <div className="container mx-auto px-4 py-16 max-w-4xl">
-        {/* Success Header */}
-        <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-green-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-green-700 mb-4">
-            Registration Successful!
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Thank you for registering for the National Coffee Championships
-            2025. Your payment has been confirmed and your registration is
-            complete.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-4xl mx-auto shadow-2xl bg-white/95 backdrop-blur">
+          <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white text-center">
+            <div className="flex justify-center mb-4">
+              <CheckCircle className="h-16 w-16" />
+            </div>
+            <CardTitle className="text-3xl">Registration Confirmed!</CardTitle>
+            <p className="text-orange-100 mt-2">
+              Thank you for registering for National Coffee Championships 2025
+            </p>
+          </CardHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Registration Details */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Registration Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">
-                    Registration ID
-                  </h3>
-                  <p className="text-lg font-mono text-green-600 bg-green-50 px-3 py-2 rounded">
-                    {registration.registrationId}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">
-                    Competition
-                  </h3>
-                  <p className="text-lg text-gray-900">
-                    {registration.competitionName}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">
-                    Participant Name
-                  </h3>
-                  <p className="text-lg text-gray-900">{registration.name}</p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">
-                    Registration Fee
-                  </h3>
-                  <p className="text-lg font-bold text-green-600">
-                    ₹ {registration.amount.toLocaleString("en-IN")}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">Email</h3>
-                  <p className="text-lg text-gray-900 flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    {registration.email}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold text-gray-700 mb-2">Mobile</h3>
-                  <p className="text-lg text-gray-900 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    {registration.mobile}
-                  </p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <h3 className="font-semibold text-gray-700 mb-2">
-                    Registration Date & Time
-                  </h3>
-                  <p className="text-lg text-gray-900">
-                    {formatDate(registration.createdAt)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              {/* Registration Details */}
+              <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  Registration Details
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-green-800 mb-1">
-                      Payment Confirmed
-                    </h4>
-                    <p className="text-green-700 text-sm">
-                      Your payment has been successfully processed. A
-                      confirmation email with your registration details has been
-                      sent to {registration.email}.
+                    <p className="text-sm text-gray-600">Registration ID</p>
+                    <p className="font-semibold font-mono">
+                      {registration?.registrationId || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Payment Status</p>
+                    <p className="font-semibold text-green-600 capitalize">
+                      {registration?.paymentStatus || "success"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Participant Name</p>
+                    <p className="font-semibold">
+                      {registration?.name || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Amount Paid</p>
+                    <p className="font-semibold text-orange-600">
+                      ₹{registration?.amount?.toLocaleString("en-IN") || "N/A"}
                     </p>
                   </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Actions Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Next Steps</h3>
-                <ul className="space-y-3 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Check your email for confirmation</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>Save your registration ID for future reference</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span>
-                      Wait for further instructions from the organizing team
-                    </span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+              {/* Participant Details */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  Participant Details
+                </h3>
+                <div className="space-y-4">
+                  {/* Personal Info */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3">
+                      <User className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">Full Name</p>
+                        <p className="text-sm text-gray-600">
+                          {registration?.name || "N/A"}
+                        </p>
+                      </div>
+                    </div>
 
-            <div className="space-y-3">
-              <Button
-                onClick={handleDownloadReceipt}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
-                size="lg"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Download Receipt
-              </Button>
+                    <div className="flex items-center space-x-3">
+                      <Mail className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">Email</p>
+                        <p className="text-sm text-gray-600">
+                          {registration?.email || "N/A"}
+                        </p>
+                      </div>
+                    </div>
 
-              <Button asChild variant="outline" className="w-full" size="lg">
-                <Link href="/">Return to Home</Link>
-              </Button>
+                    <div className="flex items-center space-x-3">
+                      <Phone className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">Mobile</p>
+                        <p className="text-sm text-gray-600">
+                          {registration?.mobile || "N/A"}
+                        </p>
+                      </div>
+                    </div>
 
-              <Button asChild variant="ghost" className="w-full" size="lg">
-                <Link href="/contact">Contact Support</Link>
-              </Button>
+                    <div className="flex items-center space-x-3">
+                      <User className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">Aadhaar Number</p>
+                        <p className="text-sm text-gray-600 font-mono">
+                          {registration?.aadhaarNumber
+                            ? formatAadhaar(registration.aadhaarNumber)
+                            : "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Work & Location */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3">
+                      <Building className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">Work Place</p>
+                        <p className="text-sm text-gray-600">
+                          {registration?.workPlace || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">State</p>
+                        <p className="text-sm text-gray-600">
+                          {registration?.state || "N/A"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Address */}
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="h-5 w-5 text-orange-600 mt-1" />
+                    <div>
+                      <p className="font-medium">Address</p>
+                      <p className="text-sm text-gray-600">
+                        {registration?.address || "N/A"}
+                        {registration?.pin && ` - ${registration.pin}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Competition Details */}
+              <div className="bg-orange-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  Competition Details
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium">Competition</p>
+                      <p className="text-sm text-gray-600">
+                        {registration?.competitionName || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium">Competition City</p>
+                      <p className="text-sm text-gray-600 capitalize">
+                        {registration?.city || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-5 w-5 text-orange-600" />
+                    <div>
+                      <p className="font-medium">Registration Date</p>
+                      <p className="text-sm text-gray-600">
+                        {registration?.createdAt
+                          ? formatDate(registration.createdAt)
+                          : "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Confirmation */}
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <div className="flex items-center space-x-3">
+                  <Mail className="h-5 w-5 text-orange-600" />
+                  <div>
+                    <p className="font-medium text-orange-800">
+                      Confirmation Email Sent
+                    </p>
+                    <p className="text-sm text-orange-600">
+                      A detailed confirmation has been sent to{" "}
+                      {registration?.email || "your email"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  onClick={() => router.push("/")}
+                  variant="outline"
+                  className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  <Home className="mr-2 h-4 w-4" />
+                  Go to Homepage
+                </Button>
+                <Button
+                  onClick={handlePrint}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-red-700 hover:from-orange-700 hover:to-red-800"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Print Confirmation
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Important Notes */}
-        <Card className="mt-8 border-orange-200">
-          <CardContent className="pt-6">
-            <h3 className="font-semibold text-orange-800 mb-3">
-              Important Notes
-            </h3>
-            <ul className="space-y-2 text-sm text-orange-700">
-              <li>
-                • Please keep your registration ID safe for all future
-                communications
-              </li>
-              <li>
-                • The organizing team will contact you with competition schedule
-                and details
-              </li>
-              <li>
-                • For any queries, email us at competitions@indiacoffeeboard.org
-              </li>
-              <li>• Follow us on social media for competition updates</li>
-            </ul>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
-
-// export default function RegistrationSuccessPage() {
-//   return (
-//     <div className="min-h-screen bg-green-50 flex items-center justify-center">
-//       <div className="text-center">
-//         <h1 className="text-4xl font-bold text-green-600 mb-4">
-//           Payment Successful!
-//         </h1>
-//         <p className="text-gray-600">
-//           Your registration has been completed successfully.
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }

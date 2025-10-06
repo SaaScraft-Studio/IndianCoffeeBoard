@@ -1,16 +1,21 @@
-import './globals.css';
-import type { Metadata } from 'next';
+import "./globals.css";
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'National Coffee Championships 2025 - India Coffee Board Registration',
-  description: 'Register for India\'s premier coffee competition. Showcase your skills and compete with the best coffee professionals across Mumbai, Delhi, and Bangalore.',
-  keywords: 'coffee, championship, india, registration, competition, barista, specialty coffee, SCAI',
-  authors: [{ name: 'India Coffee Board' }],
+  title: "National Coffee Championships 2025 - India Coffee Board Registration",
+  description:
+    "Register for India's premier coffee competition. Showcase your skills and compete with the best coffee professionals across Mumbai, Delhi, and Bangalore.",
+  keywords:
+    "coffee, championship, india, registration, competition, barista, specialty coffee, SCAI",
+  authors: [{ name: "India Coffee Board" }],
   openGraph: {
-    title: 'National Coffee Championships 2025',
-    description: 'Register for India\'s premier coffee competition',
-    type: 'website',
-    locale: 'en_IN',
+    title: "National Coffee Championships 2025",
+    description: "Register for India's premier coffee competition",
+    type: "website",
+    locale: "en_IN",
+  },
+  icons: {
+    icon: "/coffee-logo.svg",
   },
 };
 
@@ -27,9 +32,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body style={{ fontFamily: 'Inter, sans-serif' }}>
-        {children}
-      </body>
+      <body style={{ fontFamily: "Inter, sans-serif" }}>{children}</body>
     </html>
   );
 }

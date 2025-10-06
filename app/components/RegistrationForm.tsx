@@ -43,6 +43,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     state: "",
     pin: "",
     competition: "",
+    workPlace: "",
+    passportNumber: "",
+    passportFile: null,
+    amount: 0,
+    competitionName: "",
     aadhaarNumber: "",
     acceptedTerms: false,
   });
@@ -188,7 +193,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       );
       formPayload.append("competition", formData.competition || "");
       formPayload.append("competitionName", selectedCompetition.name || "");
-      formPayload.append("city", formData.city || "");
+      formPayload.append("competitionCity", formData.city || "");
       formPayload.append("amount", selectedCompetition.price.toString());
       formPayload.append(
         "acceptedTerms",
