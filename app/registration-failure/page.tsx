@@ -1,55 +1,63 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { XCircle, RefreshCw, Phone, Mail } from "lucide-react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+  XCircle,
+  RefreshCw,
+  Calendar,
+  MapPin,
+  AlertTriangle,
+} from "lucide-react";
 
 interface RegistrationDetails {
   _id: string;
   registrationId: string;
   name: string;
+  email: string;
+  mobile: string;
   competitionName: string;
+  city: string;
   amount: number;
   paymentStatus: string;
+  createdAt: string;
 }
 
 export default function RegistrationFailurePage() {
-  const searchParams = useSearchParams();
-  const registrationId = searchParams.get("id");
   const [registration, setRegistration] = useState<RegistrationDetails | null>(
     null
   );
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [retrying, setRetrying] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const registrationId = searchParams.get("id");
 
   useEffect(() => {
-    const fetchRegistrationDetails = async () => {
-      if (!registrationId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration/${registrationId}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setRegistration(data);
-        }
-      } catch (err) {
-        console.error("Error fetching registration:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRegistrationDetails();
+    if (registrationId) {
+      fetchRegistrationDetails(registrationId);
+    } else {
+      setIsLoading(false);
+    }
   }, [registrationId]);
+
+  const fetchRegistrationDetails = async (id: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration/${id}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setRegistration(data);
+      }
+    } catch (err) {
+      console.error("Error fetching registration:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleRetryPayment = async () => {
     if (!registrationId) return;
@@ -69,7 +77,6 @@ export default function RegistrationFailurePage() {
       const data = await response.json();
 
       if (response.ok && data.payment_url) {
-        // Redirect to payment page
         window.location.href = data.payment_url;
       } else {
         alert("Failed to initiate payment retry. Please try again.");
@@ -82,170 +89,155 @@ export default function RegistrationFailurePage() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-red-50 to-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading registration details...</p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <h2 className="text-xl font-semibold mb-2">
+              Loading Registration Details
+            </h2>
+            <p className="text-gray-600">
+              Please wait while we fetch your registration information...
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-red-50 to-white">
-      <div className="container mx-auto px-4 py-16 max-w-2xl">
-        {/* Failure Header */}
-        <div className="text-center mb-12">
-          <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <XCircle className="w-12 h-12 text-red-600" />
-          </div>
-          <h1 className="text-4xl font-bold text-red-700 mb-4">
-            Payment Failed
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            We couldn't process your payment. Your registration is saved, but
-            the payment was not completed.
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8">
+        <Card className="max-w-4xl mx-auto shadow-2xl bg-white/95 backdrop-blur">
+          <CardHeader className="bg-gradient-to-r from-red-500 to-orange-600 text-white text-center">
+            <div className="flex justify-center mb-4">
+              <XCircle className="h-16 w-16" />
+            </div>
+            <CardTitle className="text-3xl">Payment Failed</CardTitle>
+            <p className="text-red-100 mt-2">
+              We couldn't process your payment. Your registration is saved, but
+              the payment was not completed.
+            </p>
+          </CardHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Registration Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-bold text-gray-900">
-                Registration Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {registration ? (
-                <>
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              {/* Registration Details */}
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  Registration Details
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <h3 className="font-semibold text-gray-700 mb-1">
-                      Registration ID
-                    </h3>
-                    <p className="text-lg font-mono text-gray-900">
-                      {registration.registrationId}
+                    <p className="text-sm text-gray-600">Registration ID</p>
+                    <p className="font-semibold font-mono">
+                      {registration?.registrationId || "N/A"}
                     </p>
                   </div>
-
                   <div>
-                    <h3 className="font-semibold text-gray-700 mb-1">
-                      Participant
-                    </h3>
-                    <p className="text-lg text-gray-900">{registration.name}</p>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-gray-700 mb-1">
-                      Competition
-                    </h3>
-                    <p className="text-lg text-gray-900">
-                      {registration.competitionName}
+                    <p className="text-sm text-gray-600">Payment Status</p>
+                    <p className="font-semibold text-red-600 capitalize">
+                      {registration?.paymentStatus || "failed"}
                     </p>
                   </div>
-
                   <div>
-                    <h3 className="font-semibold text-gray-700 mb-1">Amount</h3>
-                    <p className="text-lg font-bold text-red-600">
-                      ₹ {registration.amount.toLocaleString("en-IN")}
+                    <p className="text-sm text-gray-600">Participant Name</p>
+                    <p className="font-semibold">
+                      {registration?.name || "N/A"}
                     </p>
                   </div>
-                </>
-              ) : (
-                <p className="text-gray-600">
-                  Registration details not available
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  <div>
+                    <p className="text-sm text-gray-600">Amount</p>
+                    <p className="font-semibold text-red-600">
+                      ₹{registration?.amount?.toLocaleString("en-IN") || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-          {/* Actions & Support */}
-          <div className="space-y-6">
-            <Card>
-              <CardContent className="pt-6">
-                <h3 className="font-semibold text-gray-900 mb-4">
-                  What happened?
+              {/* Competition Details */}
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-800">
+                  Competition Details
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-5 w-5 text-red-600" />
+                    <div>
+                      <p className="font-medium">Competition</p>
+                      <p className="text-sm text-gray-600">
+                        {registration?.competitionName || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-5 w-5 text-red-600" />
+                    <div>
+                      <p className="font-medium">Competition City</p>
+                      <p className="text-sm text-gray-600 capitalize">
+                        {registration?.city || "N/A"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <Button
+                  onClick={() => router.push("/")}
+                  variant="outline"
+                  className="flex-1 border-orange-300 text-orange-700 hover:bg-orange-50"
+                >
+                  Try New Registration
+                </Button>
+                <Button
+                  onClick={handleRetryPayment}
+                  disabled={retrying || !registration}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-orange-700 hover:from-red-700 hover:to-orange-800"
+                >
+                  {retrying ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Retry Payment
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Important Note */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-3 text-gray-800">
+                  Important
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-600">
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Payment was declined or cancelled</span>
+                  <li className="flex items-start space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5" />
+                    <span>
+                      Your registration will be confirmed only after successful
+                      payment
+                    </span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Network or technical issue occurred</span>
+                  <li className="flex items-start space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5" />
+                    <span>
+                      Make sure you have sufficient balance in your account
+                    </span>
                   </li>
-                  <li className="flex items-start gap-2">
-                    <XCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
-                    <span>Payment session timed out</span>
+                  <li className="flex items-start space-x-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5" />
+                    <span>Use a stable internet connection during payment</span>
                   </li>
                 </ul>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-3">
-              <Button
-                onClick={handleRetryPayment}
-                disabled={retrying || !registration}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-                size="lg"
-              >
-                {retrying ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Retry Payment
-                  </>
-                )}
-              </Button>
-
-              <Button asChild variant="outline" className="w-full" size="lg">
-                <Link href="/">Try New Registration</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Support Section */}
-        <Card className="mt-8 border-blue-200">
-          <CardContent className="pt-6">
-            <h3 className="font-semibold text-blue-800 mb-4">Need Help?</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Mail className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-blue-800">Email Support</h4>
-                  <p className="text-blue-700 text-sm">
-                    support@indiacoffeeboard.org
-                  </p>
-                </div>
               </div>
-
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Phone className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-blue-800">Phone Support</h4>
-                  <p className="text-blue-700 text-sm">+91-XXXXX-XXXXX</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-700">
-                <strong>Note:</strong> Your registration details are saved. You
-                can retry the payment using the same registration ID. If you
-                continue to face issues, please contact our support team.
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -253,16 +245,3 @@ export default function RegistrationFailurePage() {
     </div>
   );
 }
-
-// export default function RegistrationFailurePage() {
-//   return (
-//     <div className="min-h-screen bg-red-50 flex items-center justify-center">
-//       <div className="text-center">
-//         <h1 className="text-4xl font-bold text-red-600 mb-4">Payment Failed</h1>
-//         <p className="text-gray-600">
-//           There was an issue processing your payment.
-//         </p>
-//       </div>
-//     </div>
-//   );
-// }

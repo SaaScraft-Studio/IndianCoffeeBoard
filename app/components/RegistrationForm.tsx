@@ -323,7 +323,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-              Name *
+              Full Name *
             </Label>
             <Input
               id="name"
