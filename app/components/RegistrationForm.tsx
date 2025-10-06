@@ -188,8 +188,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       );
       formPayload.append("competition", formData.competition || "");
       formPayload.append("competitionName", selectedCompetition.name || "");
+      formPayload.append("city", formData.city || "");
       formPayload.append("amount", selectedCompetition.price.toString());
-      formPayload.append("accepted", formData.acceptedTerms ? "true" : "false");
+      formPayload.append(
+        "acceptedTerms",
+        formData.acceptedTerms ? "true" : "false"
+      );
 
       // Append passport fields if required
       if (selectedCompetition.passportRequired) {
@@ -199,7 +203,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         }
       }
 
-      console.log("📡 Sending registration + payment request...");
+      console.log("📡 Sending registration + payment request...", formPayload);
 
       // 2️⃣ Submit to register-and-pay endpoint (combines registration + payment)
       const paymentRes = await fetch(
