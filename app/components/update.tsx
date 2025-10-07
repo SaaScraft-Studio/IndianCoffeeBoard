@@ -61,7 +61,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const fetchCompetitions = async () => {
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions`;
-        console.log("Fetching competitions from:", apiUrl); // Optional: for debugging
 
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error("Failed to fetch competitions");
@@ -159,8 +158,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-    console.log("🔄 handleSubmitAndPay called");
-    console.log("📦 Current formData:", formData);
 
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
@@ -175,7 +172,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const selectedCompetition = competitions.find(
       (c) => c._id === formData.competition
     );
-    console.log("🎯 selectedCompetition:", selectedCompetition);
 
     if (!selectedCompetition) {
       console.error("❌ No competition found for:", formData.competition);
@@ -222,8 +218,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         }
       }
 
-      console.log("📡 Sending registration to external API...");
-
       // 2️⃣ Submit registration to external API
       const regRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/registration`,
@@ -234,7 +228,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       );
 
       const regData = await regRes.json();
-      console.log("📝 Registration API response:", regData);
 
       if (!regRes.ok) {
         console.error("❌ Registration failed:", regData);
@@ -260,11 +253,9 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       const { registration, retryAllowed } = regData;
-      console.log("✅ Registration created:", registration);
 
       // 3️⃣ Check if payment is already successful
       if (registration.paymentStatus === "success") {
-        console.log("🎉 Already paid, registration complete!");
         toast({
           title: "Already Registered",
           description: "Your payment was successful. Registration complete.",
@@ -274,8 +265,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         return;
       }
 
-      // 4️⃣ Initiate payment with Instamojo
-      console.log("💰 Initiating Instamojo payment...");
+      // 4️⃣ Initiate payment
       const paymentRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payment/initiate`,
         {
@@ -292,7 +282,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       );
 
       const paymentData = await paymentRes.json();
-      console.log("💳 Payment initiation response:", paymentData);
 
       if (!paymentRes.ok || !paymentData.success) {
         console.error("❌ Failed to initiate payment");
@@ -308,7 +297,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
 
       // 5️⃣ Redirect to Instamojo payment page
-      console.log("🔗 Redirecting to Instamojo:", paymentData.redirectUrl);
       window.location.href = paymentData.redirectUrl;
 
       // Note: Payment status will be updated via webhook, not immediately

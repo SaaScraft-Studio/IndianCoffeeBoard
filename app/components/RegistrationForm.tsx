@@ -63,7 +63,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const fetchCompetitions = async () => {
       try {
         const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions`;
-        console.log("Fetching competitions from:", apiUrl);
 
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error("Failed to fetch competitions");
@@ -144,8 +143,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-    console.log("🔄 handleSubmitAndPay called");
-    console.log("📦 Current formData:", formData);
 
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
@@ -160,7 +157,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     const selectedCompetition = competitions.find(
       (c) => c._id === formData.competition
     );
-    console.log("🎯 selectedCompetition:", selectedCompetition);
 
     if (!selectedCompetition) {
       console.error("❌ No competition found for:", formData.competition);
@@ -208,8 +204,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         }
       }
 
-      console.log("📡 Sending registration + payment request...", formPayload);
-
       // 2️⃣ Submit to register-and-pay endpoint (combines registration + payment)
       const paymentRes = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/payment/register-and-pay`,
@@ -220,7 +214,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       );
 
       const paymentData = await paymentRes.json();
-      console.log("💳 Register-and-pay API response:", paymentData);
 
       if (!paymentRes.ok) {
         console.error("❌ Registration/Payment failed:", paymentData);
@@ -253,7 +246,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
 
       // 3️⃣ Handle successful payment initiation
       if (paymentData.payment_url) {
-        console.log("🔗 Redirecting to Instamojo:", paymentData.payment_url);
         // Redirect user to Instamojo payment page
         window.location.href = paymentData.payment_url;
       } else {
