@@ -13,25 +13,6 @@ export default function Home() {
 
   const currentYear = new Date().getFullYear();
 
-  // City-specific event details
-  const cityEventDetails = {
-    mumbai: {
-      title: "Alongside HORECA Business & BAKERY Business 2025",
-      venue: "Jioworld Convention Centre, BKC - Mumbai",
-      dates: "30th October to 1st November, 2025",
-    },
-    delhi: {
-      title: "Nexus Select CityWalk Saket District Centre",
-      venue: "District Centre, Sector 6, Pushp Vihar, New Delhi, Delhi 110017",
-      dates: "21st to 23rd November, 2025.",
-    },
-    bangalore: {
-      title: "Bangalore Coffee Championship 2025",
-      venue: "To be announced - Bangalore",
-      dates: "Dates to be announced",
-    },
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-pink-100 via-white to-orange-50">
       <Header />
@@ -54,29 +35,32 @@ export default function Home() {
             onCityChange={setSelectedCity}
           />
 
-          {/* Event details for all cities */}
-          <div className="text-center m-6 text-gray-700 space-y-1">
-            <p className="font-semibold">
-              {cityEventDetails[selectedCity].title}
-            </p>
-            <p>{cityEventDetails[selectedCity].venue}</p>
-            <p>{cityEventDetails[selectedCity].dates}</p>
-          </div>
+          {/* ✅ Mumbai event details */}
+          {selectedCity === "mumbai" && (
+            <div className="text-center m-6 text-gray-700 space-y-1">
+              <p className="font-semibold">Alongside</p>
+              <p className="font-medium">
+                HORECA Business & BAKERY Business 2025
+              </p>
+              <p>Jioworld Convention Centre, BKC - Mumbai</p>
+              <p>30th October to 1st November, 2025.</p>
+            </div>
+          )}
 
-          {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bangalore */}
-          {selectedCity === "bangalore" ? (
+          {/* <RegistrationForm city={selectedCity} /> */}
+          {selectedCity === "mumbai" ? (
+            <RegistrationForm city={selectedCity} />
+          ) : (
             <div className="flex items-center justify-center h-64">
               <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
                 <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
                   🚧 Coming Soon
                 </p>
                 <p className="text-gray-700 mt-2 text-lg">
-                  Registration for Bangalore will open soon.
+                  Registration for this city will open soon.
                 </p>
               </div>
             </div>
-          ) : (
-            <RegistrationForm city={selectedCity} />
           )}
         </div>
       </main>
