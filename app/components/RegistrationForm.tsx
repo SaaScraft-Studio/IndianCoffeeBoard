@@ -143,7 +143,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
       toast({
@@ -196,6 +195,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         formData.acceptedTerms ? "true" : "false"
       );
 
+      console.log("Submittin form: ", formPayload);
       // Append passport fields if required
       if (selectedCompetition.passportRequired) {
         formPayload.append("passportNumber", formData.passportNumber || "");
