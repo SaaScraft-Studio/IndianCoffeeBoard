@@ -4,14 +4,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface CityTabsProps {
-  selectedCity: "mumbai" | "delhi" | "bangalore";
-  onCityChange: (city: "mumbai" | "delhi" | "bangalore") => void;
+  selectedCity: "mumbai" | "delhi" | "bengaluru";
+  onCityChange: (city: "mumbai" | "delhi" | "bengaluru") => void;
 }
 
 const cities = [
   { id: "mumbai" as const, name: "Mumbai", icon: "/gateway.png" },
   { id: "delhi" as const, name: "Delhi", icon: "lalQuila.png" },
-  { id: "bangalore" as const, name: "Bangalore", icon: "bangalore.png" },
+  { id: "bengaluru" as const, name: "Bengaluru", icon: "bangalore.png" },
 ];
 
 export default function CityTabs({

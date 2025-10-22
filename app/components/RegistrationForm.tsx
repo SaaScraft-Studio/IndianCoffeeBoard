@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface RegistrationFormProps {
-  city: "mumbai" | "delhi" | "bangalore";
+  city: "mumbai" | "delhi" | "bengaluru";
 }
 
 export default function RegistrationForm({ city }: RegistrationFormProps) {
@@ -53,7 +53,6 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   });
 
   useEffect(() => {
-    console.log("🔄 City prop changed to:", city);
     setFormData((prev) => ({ ...prev, city }));
   }, [city]);
 
@@ -148,6 +147,29 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     return cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
   };
 
+  const handlePassportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      // Check file size (5MB = 5 * 1024 * 1024 bytes)
+      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+      if (file.size > maxSize) {
+        setErrors((prev) => ({
+          ...prev,
+          passportFile: "File size must be less than 5MB",
+        }));
+        // Clear the file input
+        e.target.value = "";
+        return;
+      }
+      // Clear any previous file size errors
+      setErrors((prev) => ({ ...prev, passportFile: "" }));
+    }
+    setFormData((prev) => ({
+      ...prev,
+      passportFile: file,
+    }));
+  };
+
   const handleSubmitAndPay = async () => {
     // console.log("Selected city:", city);
     // console.log("Form data city:", formData.city);
@@ -238,14 +260,31 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
           return;
         }
 
-        toast({
-          title: "Registration/Payment Failed",
-          description:
-            paymentData.error ||
-            paymentData.message ||
-            "Error processing registration",
-          variant: "destructive",
-        });
+        // Handle file size errors from backend
+        if (
+          paymentData.error?.includes("size") ||
+          paymentData.error?.includes("5MB")
+        ) {
+          setErrors((prev) => ({
+            ...prev,
+            passportFile:
+              "File size must be less than 5MB. Please upload a smaller file.",
+          }));
+          toast({
+            title: "File Too Large",
+            description: "Please upload a file smaller than 5MB.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Registration/Payment Failed",
+            description:
+              paymentData.error ||
+              paymentData.message ||
+              "Error processing registration",
+            variant: "destructive",
+          });
+        }
         setPaymentStatus("failed");
         setLoading(false);
         return;
@@ -548,18 +587,14 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 htmlFor="passportUpload"
                 className="text-sm font-medium text-gray-700"
               >
-                Upload Passport *
+                Upload Passport *{" "}
+                <span className="text-xs text-gray-500">(Max 5MB)</span>
               </Label>
               <Input
                 id="passportUpload"
                 type="file"
                 accept="image/*,.pdf"
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    passportFile: e.target.files?.[0] || null,
-                  }))
-                }
+                onChange={handlePassportFileChange}
                 className={cn(
                   "border-2 focus:border-orange-500 focus:ring-orange-500",
                   errors.passportFile && "border-red-500"
@@ -567,6 +602,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
               />
               {errors.passportFile && (
                 <p className="text-sm text-red-600">{errors.passportFile}</p>
+              )}
+              {formData.passportFile && (
+                <p className="text-xs text-green-600">
+                  File selected: {formData.passportFile.name} (
+                  {(formData.passportFile.size / (1024 * 1024)).toFixed(2)} MB)
+                </p>
               )}
             </div>
           </div>

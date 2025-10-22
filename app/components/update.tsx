@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface RegistrationFormProps {
-  city: "mumbai" | "delhi" | "bangalore";
+  city: "mumbai" | "delhi" | "bengaluru";
 }
 
 export default function RegistrationForm({ city }: RegistrationFormProps) {

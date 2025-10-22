@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export default function Home() {
   const [selectedCity, setSelectedCity] = useState<
-    "mumbai" | "delhi" | "bangalore"
+    "mumbai" | "delhi" | "bengaluru"
   >("mumbai");
 
   const currentYear = new Date().getFullYear();
@@ -25,7 +25,7 @@ export default function Home() {
       venue: "To be announced - Delhi",
       dates: "Dates to be announced",
     },
-    bangalore: {
+    bengaluru: {
       title: "NEXUS SHANTINIKETAN",
       venue:
         "Whitefield Main Rd, Thigalarapalya, Krishnarajapuram, Bengaluru, Karnataka 560048",
@@ -64,8 +64,8 @@ export default function Home() {
             <p>{cityEventDetails[selectedCity].dates}</p>
           </div>
 
-          {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bangalore */}
-          {/* Show RegistrationForm for Mumbai and Bangalore, Coming Soon for Delhi */}
+          {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bengaluru */}
+          {/* Show RegistrationForm for Mumbai and Bengaluru, Coming Soon for Delhi */}
           {selectedCity === "delhi" ? (
             <div className="flex items-center justify-center h-64">
               <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">

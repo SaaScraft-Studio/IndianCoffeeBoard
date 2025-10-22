@@ -1,7 +1,7 @@
 export interface RegistrationData {
   _id?: string;
   registrationId: string;
-  city: "mumbai" | "delhi" | "bangalore";
+  city: "mumbai" | "delhi" | "bengaluru";
   name: string;
   email: string;
   mobile: string;
