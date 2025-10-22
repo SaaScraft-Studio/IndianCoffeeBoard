@@ -51,6 +51,12 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
     aadhaarNumber: "",
     acceptedTerms: false,
   });
+
+  useEffect(() => {
+    console.log("🔄 City prop changed to:", city);
+    setFormData((prev) => ({ ...prev, city }));
+  }, [city]);
+
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<
     "idle" | "processing" | "success" | "failed"
@@ -143,7 +149,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   };
 
   const handleSubmitAndPay = async () => {
-
+    // console.log("Selected city:", city);
+    // console.log("Form data city:", formData.city);
     if (!validateForm()) {
       console.warn("⚠️ Validation failed!");
       toast({
@@ -195,7 +202,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
         "acceptedTerms",
         formData.acceptedTerms ? "true" : "false"
       );
-
+      // console.log("📤 Sending to API - competitionCity:", formData.city);
       // Append passport fields if required
       if (selectedCompetition.passportRequired) {
         formPayload.append("passportNumber", formData.passportNumber || "");

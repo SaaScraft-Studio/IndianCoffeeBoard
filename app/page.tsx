@@ -27,7 +27,8 @@ export default function Home() {
     },
     bangalore: {
       title: "NEXUS SHANTINIKETAN",
-      venue:"Whitefield Main Rd, Thigalarapalya, Krishnarajapuram, Bengaluru, Karnataka 560048",
+      venue:
+        "Whitefield Main Rd, Thigalarapalya, Krishnarajapuram, Bengaluru, Karnataka 560048",
       dates: "14th to 16th Nov 2025",
     },
   };
@@ -64,6 +65,7 @@ export default function Home() {
           </div>
 
           {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bangalore */}
+          {/* Show RegistrationForm for Mumbai and Bangalore, Coming Soon for Delhi */}
           {selectedCity === "delhi" ? (
             <div className="flex items-center justify-center h-64">
               <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
@@ -71,7 +73,7 @@ export default function Home() {
                   🚧 Coming Soon
                 </p>
                 <p className="text-gray-700 mt-2 text-lg">
-                  Registration for Bangalore will open soon.
+                  Registration for Delhi will open soon.
                 </p>
               </div>
             </div>
