@@ -56,17 +56,32 @@ export default function Home() {
           />
 
           {/* Event details for all cities */}
-          <div className="text-center m-6 text-gray-700 space-y-1">
-            <p className="font-semibold">
-              {cityEventDetails[selectedCity].title}
-            </p>
-            <p>{cityEventDetails[selectedCity].venue}</p>
-            <p>{cityEventDetails[selectedCity].dates}</p>
-          </div>
+          {/* Event details only for Bengaluru */}
+          {selectedCity === "bengaluru" && (
+            <div className="text-center m-6 text-gray-700 space-y-1">
+              <p className="font-semibold">
+                {cityEventDetails[selectedCity].title}
+              </p>
+              <p>{cityEventDetails[selectedCity].venue}</p>
+              <p>{cityEventDetails[selectedCity].dates}</p>
+            </div>
+          )}
 
           {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bengaluru */}
           {/* Show RegistrationForm for Mumbai and Bengaluru, Coming Soon for Delhi */}
-          {selectedCity === "delhi" ? (
+          {/* Show RegistrationForm for Bengaluru, Registration Closed for Mumbai, Coming Soon for Delhi */}
+          {selectedCity === "mumbai" ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="bg-red-100 border border-red-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
+                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                  ❌ Registration Closed
+                </p>
+                <p className="text-gray-700 mt-2 text-lg">
+                  Registration for Mumbai is now closed.
+                </p>
+              </div>
+            </div>
+          ) : selectedCity === "delhi" ? (
             <div className="flex items-center justify-center h-64">
               <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
                 <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
