@@ -21,9 +21,10 @@ export default function Home() {
       dates: "30th October to 1st November, 2025",
     },
     delhi: {
-      title: "Delhi Coffee Championship 2025",
-      venue: "To be announced - Delhi",
-      dates: "Dates to be announced",
+      title: "Nexus Select CityWalk Delhi",
+      venue:
+        "Saket District Centre, District Centre, Sector 6, Pushp Vihar, New Delhi, Delhi 110017, India",
+      dates: "December 5th, 6th, and 7th, 2025",
     },
     bengaluru: {
       title: "NEXUS SHANTINIKETAN",
@@ -57,7 +58,8 @@ export default function Home() {
 
           {/* Event details for all cities */}
           {/* Event details only for Bengaluru */}
-          {selectedCity === "bengaluru" && (
+          {/* Event details for Bengaluru and Delhi */}
+          {(selectedCity === "bengaluru" || selectedCity === "delhi") && (
             <div className="text-center m-6 text-gray-700 space-y-1">
               <p className="font-semibold">
                 {cityEventDetails[selectedCity].title}
@@ -70,6 +72,7 @@ export default function Home() {
           {/* Show RegistrationForm for Mumbai and Delhi, Coming Soon for Bengaluru */}
           {/* Show RegistrationForm for Mumbai and Bengaluru, Coming Soon for Delhi */}
           {/* Show RegistrationForm for Bengaluru, Registration Closed for Mumbai, Coming Soon for Delhi */}
+          {/* Show RegistrationForm for Bengaluru and Delhi, Registration Closed for Mumbai */}
           {selectedCity === "mumbai" ? (
             <div className="flex items-center justify-center h-64">
               <div className="bg-red-100 border border-red-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
@@ -78,17 +81,6 @@ export default function Home() {
                 </p>
                 <p className="text-gray-700 mt-2 text-lg">
                   Registration for Mumbai is now closed.
-                </p>
-              </div>
-            </div>
-          ) : selectedCity === "delhi" ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="bg-orange-100 border border-orange-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
-                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                  🚧 Coming Soon
-                </p>
-                <p className="text-gray-700 mt-2 text-lg">
-                  Registration for Delhi will open soon.
                 </p>
               </div>
             </div>

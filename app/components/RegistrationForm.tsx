@@ -116,12 +116,27 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       newErrors.aadhaarNumber = "Please enter a valid 12-digit Aadhaar number";
     }
 
+    // if (selectedCompetition?.passportRequired) {
+    //   if (!formData.passportNumber?.trim()) {
+    //     newErrors.passportNumber = "Passport number is required";
+    //   }
+    //   if (!formData.passportFile) {
+    //     newErrors.passportFile = "Please upload your passport";
+    //   }
+    // }
+
     if (selectedCompetition?.passportRequired) {
-      if (!formData.passportNumber?.trim()) {
-        newErrors.passportNumber = "Passport number is required";
-      }
-      if (!formData.passportFile) {
-        newErrors.passportFile = "Please upload your passport";
+      const hasPassportNumber = formData.passportNumber?.trim();
+      const hasPassportFile = formData.passportFile;
+      if (hasPassportNumber || hasPassportFile) {
+        if (!hasPassportNumber) {
+          newErrors.passportNumber =
+            "Passport number is required if uploading passport";
+        }
+        if (!hasPassportFile) {
+          newErrors.passportFile =
+            "Please upload your passport if providing passport number";
+        }
       }
     }
 
@@ -560,7 +575,8 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 htmlFor="passportNumber"
                 className="text-sm font-medium text-gray-700"
               >
-                Passport Number *
+                Passport Number{" "}
+                <span className="text-xs text-gray-500">(Optional)</span>
               </Label>
               <Input
                 id="passportNumber"
@@ -587,8 +603,10 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 htmlFor="passportUpload"
                 className="text-sm font-medium text-gray-700"
               >
-                Upload Passport *{" "}
-                <span className="text-xs text-gray-500">(Max 5MB)</span>
+                Upload Passport{" "}
+                <span className="text-xs text-gray-500">
+                  (Optional, Max 5MB)
+                </span>
               </Label>
               <Input
                 id="passportUpload"
@@ -661,6 +679,11 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
                 Nationality: Participant must hold a valid passport from the
                 place they represent or documentation substantiating 24 months
                 of residency, employment or scholastic enrolment.
+              </li>
+              <li>
+                Participants may compete in city-level championships without a
+                passport. However, those who qualify for the semi-finals must
+                possess a valid passport by January 31st, 2026.
               </li>
               <li>
                 The Winners of the sanctioned National Coffee Championship will
