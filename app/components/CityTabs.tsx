@@ -9,9 +9,9 @@ interface CityTabsProps {
 }
 
 const cities = [
-  { id: "mumbai" as const, name: "Mumbai", icon: "/gateway.png" },
-  { id: "delhi" as const, name: "Delhi", icon: "lalQuila.png" },
   { id: "bengaluru" as const, name: "Bengaluru", icon: "bangalore.png" },
+  { id: "delhi" as const, name: "Delhi", icon: "lalQuila.png" },
+  { id: "mumbai" as const, name: "Mumbai", icon: "/gateway.png" },
 ];
 
 export default function CityTabs({
