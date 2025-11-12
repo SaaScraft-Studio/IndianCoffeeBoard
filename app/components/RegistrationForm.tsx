@@ -67,7 +67,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
   useEffect(() => {
     const fetchCompetitions = async () => {
       try {
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions`;
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/competitions?city=${city}`;
 
         const res = await fetch(apiUrl);
         if (!res.ok) throw new Error("Failed to fetch competitions");
@@ -85,7 +85,7 @@ export default function RegistrationForm({ city }: RegistrationFormProps) {
       }
     };
     fetchCompetitions();
-  }, [toast]);
+  }, [city, toast]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
