@@ -73,20 +73,16 @@ export default function Home() {
           {/* Show RegistrationForm for Mumbai and Bengaluru, Coming Soon for Delhi */}
           {/* Show RegistrationForm for Bengaluru, Registration Closed for Mumbai, Coming Soon for Delhi */}
           {/* Show RegistrationForm for Bengaluru and Delhi, Registration Closed for Mumbai */}
-          {selectedCity === "mumbai" ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="bg-red-100 border border-red-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
-                <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
-                  ❌ Registration Closed
-                </p>
-                <p className="text-gray-700 mt-2 text-lg">
-                  Registration for Mumbai is now closed.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <RegistrationForm city={selectedCity} />
-          )}
+          <div className="flex items-center justify-center h-64">
+  <div className="bg-red-100 border border-red-300 rounded-2xl shadow-md px-6 py-8 text-center max-w-md">
+    <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+      ❌ Registration Closed
+    </p>
+    <p className="text-gray-700 mt-2 text-lg">
+      Registration for {selectedCity.charAt(0).toUpperCase() + selectedCity.slice(1)} is now closed.
+    </p>
+  </div>
+</div>
         </div>
       </main>
 
